@@ -1,0 +1,13 @@
+###
+http://localhost:8080
+###
+http://localhost:8080/blocks
+###
+POST http://localhost:8080/blocks
+
+{
+    "data" : "restclient"
+}
+
+###
+http://localhost:8080/blocks/1

@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/auturnn/kickshaw-coin/blockchain"
+	"github.com/auturnn/kickshaw-coin/explorer"
+	"github.com/auturnn/kickshaw-coin/rest"
 )
 
 func main()  {
-	chain := blockchain.GetBlockChain()
-	chain.AddBlock("SecondBlock?")
-	chain.AllBlocksPrint()
-	chain.FindBlock(1)
+	go explorer.Start(3000)
+	rest.Start(8080)
 }

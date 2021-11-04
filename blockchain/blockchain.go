@@ -6,65 +6,49 @@ import (
 	"sync"
 )
 
-type block struct{
-	data string
-	hash string
-	prevHash string
+type Block struct{
+	Height int `json:"height"`
+	Data string `json:"data"`
+	Hash string `json:"hash"`
+	PrevHash string `json:"prevHash,omitempty"`
 }
 
 type blockchain struct{
-	block []*block
+	blocks []*Block
 }
 
 var bc *blockchain
 var once sync.Once
 
 func getLastHash() string {
-	totalBlocks := len(GetBlockChain().block)
+	totalBlocks := len(GetBlockChain().blocks)
 	if totalBlocks == 0 {
 		return ""
 	}
-	return GetBlockChain().block[totalBlocks-1].hash
+	return GetBlockChain().blocks[totalBlocks-1].Hash
 }
 
-func (b *block) getHash() {
-	hash := sha256.Sum256([]byte(b.data+b.prevHash))
-	b.hash = fmt.Sprintf("%x", hash)	
+func (b *Block) getHash() {
+	hash := sha256.Sum256([]byte(b.Data+b.PrevHash))
+	b.Hash = fmt.Sprintf("%x", hash)	
 }
 
-func createBlock(data string) *block {	
-	newBlock := block{data: data, prevHash: getLastHash()}
+func createBlock(data string) *Block {	
+	newBlock := Block{Data: data, PrevHash: getLastHash(), Height: len(GetBlockChain().blocks)+1}
 	newBlock.getHash()
 	return &newBlock
 }
 
 func (bc *blockchain) AddBlock(data string)  {
-	bc.block = append(bc.block, createBlock(data))
+	bc.blocks = append(bc.blocks, createBlock(data))
 }
 
-func (bc *blockchain) AllBlocks() []*block {
-	return bc.block
+func (bc *blockchain) AllBlocks() []*Block {
+	return bc.blocks
 }
 
-func (bc *blockchain) AllBlocksPrint()  {
-	for i, block := range bc.block{
-		fmt.Printf("Index number %d Block\n", i)
-		fmt.Printf("Data: %s\n", block.data)
-		fmt.Printf("Hash: %s\n", block.hash)
-		fmt.Printf("PrevHash: %s\n\n", block.prevHash)
-	}
-}
-
-func (bc *blockchain) FindBlock(index int)  {
-	if index >= len(bc.block){
-		fmt.Printf("Error: %d is Over the length\n", index)
-	} else{
-		fmt.Println("Find Success!!!")
-		fmt.Printf("Index number %d Block\n", index)
-		fmt.Printf("Data: %s\n", bc.block[index].data)
-		fmt.Printf("Hash: %s\n", bc.block[index].hash)
-		fmt.Printf("PrevHash: %s\n\n", bc.block[index].prevHash)
-	}
+func (bc *blockchain) GetBlock(height int) *Block {
+	return bc.blocks[height-1]
 }
 
 func GetBlockChain() *blockchain {
