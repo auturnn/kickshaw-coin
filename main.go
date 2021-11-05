@@ -1,11 +1,7 @@
 package main
 
-import (
-	"github.com/auturnn/kickshaw-coin/explorer"
-	"github.com/auturnn/kickshaw-coin/rest"
-)
+import "github.com/auturnn/kickshaw-coin/cli"
 
 func main()  {
-	go explorer.Start(3000)
-	rest.Start(8080)
+	cli.Start()
 }
