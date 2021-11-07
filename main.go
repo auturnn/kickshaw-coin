@@ -1,7 +1,9 @@
 package main
 
-import "github.com/auturnn/kickshaw-coin/cli"
+import (
+	"github.com/auturnn/kickshaw-coin/blockchain"
+)
 
 func main()  {
-	cli.Start()
+	blockchain.BlockChain()
 }
