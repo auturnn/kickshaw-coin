@@ -1,9 +1,12 @@
 package blockchain
 
 import (
+	"fmt"
 	"sync"
-)
 
+	"github.com/auturnn/kickshaw-coin/db"
+	"github.com/auturnn/kickshaw-coin/utils"
+)
 type blockchain struct{
 	NewestHash string `json:"newestHash"`
 	Height 	   int `json:"height"`
@@ -12,19 +15,33 @@ type blockchain struct{
 var bc *blockchain
 var once sync.Once
 
-func (bc *blockchain) AddBlock(data string)  {
-	block := createBlock(data, bc.NewestHash, bc.Height)
-	bc.NewestHash = block.Hash
-	bc.Height = bc.Height
+func (bc *blockchain) persist()  {
+	db.SaveBlockChain(utils.ToBytes(bc))
+}
 
+func (bc *blockchain) AddBlock(data string)  {
+	block := createBlock(data, bc.NewestHash, bc.Height+1)
+	bc.NewestHash = block.Hash
+	bc.Height = block.Height
+	bc.persist()
+}
+
+func (bc *blockchain) restore(data []byte)   {
+	utils.FromBytes(bc, data)
 }
 
 func BlockChain() *blockchain {
 	if bc == nil{
 		once.Do(func ()  {
 			bc = &blockchain{NewestHash: "", Height: 0}
-			bc.AddBlock("hi")
+			checkpoint := db.Checkpoint()
+			if checkpoint == nil{
+				bc.AddBlock("Genesis")
+			} else {
+				bc.restore(checkpoint)
+			}
 		})
 	}
+	fmt.Printf("NewestHash: %s\n", bc.NewestHash)
 	return bc
 }

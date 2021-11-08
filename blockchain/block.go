@@ -1,9 +1,8 @@
 package blockchain
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/gob"
+	"errors"
 	"fmt"
 
 	"github.com/auturnn/kickshaw-coin/db"
@@ -17,20 +16,28 @@ type Block struct{
 	Height   int 	`json:"height"`
 }
 
-func (b *Block) toBytes() []byte  {
-	var blockBuffer bytes.Buffer
-	encoder := gob.NewEncoder(&blockBuffer)
-	err := encoder.Encode(b)
-	utils.HandleError(err)
-	return blockBuffer.Bytes()
-}
+var ErrNotFound = errors.New("block not found")
 
 func (b *Block) persist()  {
-	db.SaveBlock(b.Hash, b.toBytes())
+	db.SaveBlock(b.Hash, utils.ToBytes(b))
+}
+
+func (b *Block) restore(data []byte)  {
+	utils.FromBytes(b, data)
+}
+
+func FindBlock(hash string) (*Block, error) {
+	blockBytes := db.Block(hash)
+	if blockBytes == nil {
+		return nil, ErrNotFound
+	}
+	block := &Block{}
+	block.restore(blockBytes)
+	return block, nil
 }
 
 func createBlock(data, prevHash string, height int) *Block {
-	block := Block{
+	block := &Block{
 		Data: data,
 		PrevHash: prevHash,
 		Hash: "",
@@ -39,5 +46,5 @@ func createBlock(data, prevHash string, height int) *Block {
 	payload := block.Data + block.Hash + fmt.Sprint(block.Height)
 	block.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
 	block.persist()
-	return &block
+	return block
 }
