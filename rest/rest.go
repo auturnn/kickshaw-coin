@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
+	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -59,14 +60,12 @@ type addBlockBody struct{
 func getBlocks(rw http.ResponseWriter, r *http.Request)  {
 	switch r.Method{
 	case "GET": 
-		return 
-		// json.NewEncoder(rw).Encode(blockchain.BlockChain())
+		json.NewEncoder(rw).Encode(blockchain.BlockChain().Blocks())
 	case "POST": 
-		return 
-		// var addblockbody addBlockBody
-		// utils.HandleError(json.NewDecoder(r.Body).Decode(&addblockbody))
-		// blockchain.BlockChain().AddBlock(addblockbody.Data)
-		// rw.WriteHeader(http.StatusCreated)
+		var addblockbody addBlockBody
+		utils.HandleError(json.NewDecoder(r.Body).Decode(&addblockbody))
+		blockchain.BlockChain().AddBlock(addblockbody.Data)
+		rw.WriteHeader(http.StatusCreated)
 	}
 }
 type errorResponse struct{

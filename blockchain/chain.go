@@ -45,3 +45,17 @@ func BlockChain() *blockchain {
 	fmt.Printf("NewestHash: %s\n", bc.NewestHash)
 	return bc
 }
+
+func (bc *blockchain) Blocks() (blocks []*Block)  {
+	hashCursor := bc.NewestHash
+	for {
+		block, _ := FindBlock(hashCursor)
+		blocks = append(blocks, block)
+		if block.PrevHash != "" {
+			hashCursor = block.PrevHash
+		} else{
+			break
+		}
+	}
+	return blocks
+}
