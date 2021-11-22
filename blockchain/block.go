@@ -1,19 +1,25 @@
 package blockchain
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/auturnn/kickshaw-coin/db"
 	"github.com/auturnn/kickshaw-coin/utils"
 )
 
+const difficulty int = 2
+
 type Block struct{
-	Data 	 string `json:"data"`
-	Hash 	 string `json:"hash"`
-	PrevHash string `json:"prevHash"`
-	Height   int 	`json:"height"`
+	Data 	 	string 	`json:"data"`
+	Hash 	 	string 	`json:"hash"`
+	PrevHash 	string 	`json:"prevHash"`
+	Height   	int		`json:"height"`
+	Difficulty 	int  	`json:"difficulty"`
+	Nonce		int		`json:"nonce"`
+	Timestamp   int		`json:"timestamp"`
 }
 
 var ErrNotFound = errors.New("block not found")
@@ -36,15 +42,31 @@ func FindBlock(hash string) (*Block, error) {
 	return block, nil
 }
 
+func (b *Block) mine()  {
+	target := strings.Repeat("0",b.Difficulty)
+	for{
+		b.Timestamp = int(time.Now().Unix())
+		hash := utils.Hash(b)
+		fmt.Printf("Hash:=%s\nTarget:=%s\nNonce:=%d\n\n", hash, target ,b.Nonce)
+		if !strings.HasPrefix(hash, target){
+			b.Nonce++
+		}else{
+			b.Hash = hash
+			break
+		}
+	}
+}
+
 func createBlock(data, prevHash string, height int) *Block {
 	block := &Block{
 		Data: data,
 		PrevHash: prevHash,
 		Hash: "",
 		Height: height,
+		Difficulty: BlockChain().difficulty(),
+		Nonce: 0,
 	}
-	payload := block.Data + block.Hash + fmt.Sprint(block.Height)
-	block.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
+	block.mine()
 	block.persist()
 	return block
 }

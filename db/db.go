@@ -10,7 +10,7 @@ import (
 var db *bolt.DB
 
 const (
-	dbName = "blockchain.db"
+	dbName = "kickshow.db"
 	dataBucket = "data"
 	blocksBucket = "blocks"
 	checkpoint = "checkpoint"
@@ -47,7 +47,7 @@ func SaveBlock(hash string, data []byte)  {
 	utils.HandleError(err)
 }
 
-func SaveBlockChain(data []byte)   {
+func SaveCheckpoint(data []byte)   {
 	err := DB().Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		return bucket.Put([]byte(checkpoint), data)
