@@ -12,23 +12,23 @@ import (
 
 const difficulty int = 2
 
-type Block struct{
-	Data 	 	string 	`json:"data"`
-	Hash 	 	string 	`json:"hash"`
-	PrevHash 	string 	`json:"prevHash"`
-	Height   	int		`json:"height"`
-	Difficulty 	int  	`json:"difficulty"`
-	Nonce		int		`json:"nonce"`
-	Timestamp   int		`json:"timestamp"`
+type Block struct {
+	Hash         string `json:"hash"`
+	PrevHash     string `json:"prevHash"`
+	Height       int    `json:"height"`
+	Difficulty   int    `json:"difficulty"`
+	Nonce        int    `json:"nonce"`
+	Timestamp    int    `json:"timestamp"`
+	Transactions []*Tx  `json:"transactions"`
 }
 
 var ErrNotFound = errors.New("block not found")
 
-func (b *Block) persist()  {
+func (b *Block) persist() {
 	db.SaveBlock(b.Hash, utils.ToBytes(b))
 }
 
-func (b *Block) restore(data []byte)  {
+func (b *Block) restore(data []byte) {
 	utils.FromBytes(b, data)
 }
 
@@ -42,31 +42,54 @@ func FindBlock(hash string) (*Block, error) {
 	return block, nil
 }
 
-func (b *Block) mine()  {
-	target := strings.Repeat("0",b.Difficulty)
-	for{
+func (b *Block) mine() {
+	target := strings.Repeat("0", b.Difficulty)
+	for {
 		b.Timestamp = int(time.Now().Unix())
 		hash := utils.Hash(b)
-		fmt.Printf("Hash:=%s\nTarget:=%s\nNonce:=%d\n\n", hash, target ,b.Nonce)
-		if !strings.HasPrefix(hash, target){
+		fmt.Printf("Hash:=%s\nTarget:=%s\nNonce:=%d\n\n", hash, target, b.Nonce)
+		if !strings.HasPrefix(hash, target) {
 			b.Nonce++
-		}else{
+		} else {
 			b.Hash = hash
 			break
 		}
 	}
 }
 
-func createBlock(data, prevHash string, height int) *Block {
+func createBlock(prevHash string, height int) *Block {
 	block := &Block{
-		Data: data,
-		PrevHash: prevHash,
-		Hash: "",
-		Height: height,
-		Difficulty: BlockChain().difficulty(),
-		Nonce: 0,
+		PrevHash:     prevHash,
+		Hash:         "",
+		Height:       height,
+		Difficulty:   BlockChain().difficulty(),
+		Nonce:        0,
+		Transactions: []*Tx{makeCoinbaseTx("auturnn")},
 	}
 	block.mine()
 	block.persist()
 	return block
+}
+
+func (t *Tx) getID() {
+	t.ID = utils.Hash(t)
+}
+
+func makeCoinbaseTx(address string) *Tx {
+	txIns := []*TxIn{
+		{"COINBASE", minerReward},
+	}
+
+	txOuts := []*TxOut{
+		{address, minerReward},
+	}
+
+	tx := Tx{
+		ID:        "",
+		Timestamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	tx.getID()
+	return &tx
 }
