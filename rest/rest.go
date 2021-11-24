@@ -58,6 +58,16 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "Get TxOuts for an Address",
 		},
+		{
+			URL:         url("/mempool"),
+			Method:      "GET",
+			Description: "Get Mempool",
+		},
+		{
+			URL:         url("/transactions"),
+			Method:      "POST",
+			Description: "Make a transaction",
+		},
 	}
 	json.NewEncoder(rw).Encode(data)
 }
@@ -112,6 +122,25 @@ func getBalance(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type addTxPayload struct {
+	To     string `json:"to"`
+	Amount int    `json:"amount"`
+}
+
+func getMempool(rw http.ResponseWriter, r *http.Request) {
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool.Txs))
+}
+
+func transactions(rw http.ResponseWriter, r *http.Request) {
+	var payload addTxPayload
+	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload))
+	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
+	if err != nil {
+		json.NewEncoder(rw).Encode(errorResponse{"not enough funds"})
+	}
+	rw.WriteHeader(http.StatusCreated)
+}
+
 func Start(aPort int) {
 	port = fmt.Sprintf(":%d", aPort)
 
@@ -122,6 +151,8 @@ func Start(aPort int) {
 	router.HandleFunc("/blocks", getBlocks).Methods("GET", "POST")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", getBlock).Methods("GET")
 	router.HandleFunc("/balance/{address}", getBalance).Methods("GET")
+	router.HandleFunc("/mempool", getMempool).Methods("GET")
+	router.HandleFunc("/transactions", transactions).Methods("POST")
 	fmt.Printf("Listening http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }

@@ -59,14 +59,15 @@ func (b *Block) mine() {
 
 func createBlock(prevHash string, height int) *Block {
 	block := &Block{
-		PrevHash:     prevHash,
-		Hash:         "",
-		Height:       height,
-		Difficulty:   BlockChain().difficulty(),
-		Nonce:        0,
-		Transactions: []*Tx{makeCoinbaseTx("auturnn")},
+		PrevHash:   prevHash,
+		Hash:       "",
+		Height:     height,
+		Difficulty: BlockChain().difficulty(),
+		Nonce:      0,
 	}
 	block.mine()
+	//mining이 언제 끝날지 모르기 때문에 끝난후에 이떄 추가
+	block.Transactions = Mempool.TxToConfirm()
 	block.persist()
 	return block
 }
@@ -75,6 +76,7 @@ func (t *Tx) getID() {
 	t.ID = utils.Hash(t)
 }
 
+//Coinbase는 Blockchain에서 채굴자에게 주는 보상
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
 		{"COINBASE", minerReward},
