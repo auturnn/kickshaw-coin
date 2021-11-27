@@ -41,9 +41,14 @@ type UTxOut struct {
 
 func isOnMempool(uTxOut *UTxOut) bool {
 	exists := false
+OuterLoop: // label
 	for _, tx := range Mempool.Txs {
 		for _, input := range tx.TxIns {
-			exists = input.TxID == uTxOut.TxID && input.Index == uTxOut.Index
+			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
+				exists = true
+				break OuterLoop
+			}
+
 		}
 	}
 	return exists
@@ -60,13 +65,13 @@ func isOnMempool(uTxOut *UTxOut) bool {
 	5000원 2장을 모두 꺼내어 거래상대에게 주고, 잔금을 치뤄받는 형식.
 */
 func makeTx(from, to string, amount int) (*Tx, error) {
-	if BlockChain().BalanceByAddress(from) < amount {
+	if BalanceByAddress(from, bc) < amount {
 		return nil, errors.New("not enough money")
 	}
 	var txOuts []*TxOut
 	var txIns []*TxIn
 	total := 0
-	uTxOuts := BlockChain().UTxOutsByAddress(from)
+	uTxOuts := UTxOutsByAddress(from, BlockChain())
 	for _, uTxOut := range uTxOuts {
 		if total >= amount {
 			break

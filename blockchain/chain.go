@@ -24,8 +24,8 @@ type blockchain struct {
 var bc *blockchain
 var once sync.Once
 
-func (bc *blockchain) recalculrateDifficulty() int {
-	allBlocks := bc.Blocks()
+func recalculrateDifficulty(bc *blockchain) int {
+	allBlocks := Blocks(bc)
 	newestBlock := allBlocks[0]
 	lastRecalculratedBlock := allBlocks[difficultyInterval-1]
 	//actualTime : 현재 생성되는 블럭의 생성주기
@@ -40,36 +40,36 @@ func (bc *blockchain) recalculrateDifficulty() int {
 	return bc.CurrentDifficulty
 }
 
-func (bc *blockchain) difficulty() int {
+func getDifficulty(bc *blockchain) int {
 	if bc.Height == 0 {
 		return defaultDiffculty
 	} else if bc.Height%difficultyInterval == 0 {
 		//recalculrate the difficulty
-		return bc.recalculrateDifficulty()
+		return recalculrateDifficulty(bc)
 	} else {
 		return bc.CurrentDifficulty
 	}
 
 }
 
-func (bc *blockchain) persist() {
+func persistBlockchain(bc *blockchain) {
 	db.SaveCheckpoint(utils.ToBytes(bc))
 }
 
 func (bc *blockchain) AddBlock() {
-	block := createBlock(bc.NewestHash, bc.Height+1)
+	block := createBlock(bc.NewestHash, bc.Height+1, getDifficulty(bc))
 	bc.NewestHash = block.Hash
 	bc.Height = block.Height
 	bc.CurrentDifficulty = block.Difficulty
-	bc.persist()
+	persistBlockchain(bc)
 }
 
 func (bc *blockchain) restore(data []byte) {
 	utils.FromBytes(bc, data)
 }
 
-func (bc *blockchain) BalanceByAddress(address string) (amount int) {
-	txOuts := bc.UTxOutsByAddress(address)
+func BalanceByAddress(address string, bc *blockchain) (amount int) {
+	txOuts := UTxOutsByAddress(address, bc)
 	for _, txOut := range txOuts {
 		amount += txOut.Amount
 	}
@@ -77,10 +77,10 @@ func (bc *blockchain) BalanceByAddress(address string) (amount int) {
 }
 
 //Unspent Transaction Outputs By Address
-func (bc *blockchain) UTxOutsByAddress(address string) []*UTxOut {
+func UTxOutsByAddress(address string, bc *blockchain) []*UTxOut {
 	var uTxOuts []*UTxOut
 	creatorTxs := make(map[string]bool)
-	for _, block := range bc.Blocks() {
+	for _, block := range Blocks(bc) {
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
 				if input.Owner == address {
@@ -103,22 +103,20 @@ func (bc *blockchain) UTxOutsByAddress(address string) []*UTxOut {
 }
 
 func BlockChain() *blockchain {
-	if bc == nil {
-		once.Do(func() {
-			bc = &blockchain{Height: 0}
-			checkpoint := db.Checkpoint()
-			if checkpoint == nil {
-				bc.AddBlock()
-			} else {
-				bc.restore(checkpoint)
-			}
-		})
-	}
+	once.Do(func() {
+		bc = &blockchain{Height: 0}
+		checkpoint := db.Checkpoint()
+		if checkpoint == nil {
+			bc.AddBlock()
+		} else {
+			bc.restore(checkpoint)
+		}
+	})
 	fmt.Printf("NewestHash: %s\n", bc.NewestHash)
 	return bc
 }
 
-func (bc *blockchain) Blocks() (blocks []*Block) {
+func Blocks(bc *blockchain) (blocks []*Block) {
 	hashCursor := bc.NewestHash
 	for {
 		block, _ := FindBlock(hashCursor)
