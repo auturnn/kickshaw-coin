@@ -23,13 +23,30 @@ type Tx struct {
 }
 
 type TxIn struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+	TxID  string `json:"txId"`
+	Index int    `json:"index"`
+	Owner string `json:"owner"`
 }
 
 type TxOut struct {
 	Owner  string `json:"owner"`
 	Amount int    `json:"amount"`
+}
+
+type UTxOut struct {
+	TxID   string
+	Index  int
+	Amount int
+}
+
+func isOnMempool(uTxOut *UTxOut) bool {
+	exists := false
+	for _, tx := range Mempool.Txs {
+		for _, input := range tx.TxIns {
+			exists = input.TxID == uTxOut.TxID && input.Index == uTxOut.Index
+		}
+	}
+	return exists
 }
 
 /*
@@ -43,38 +60,30 @@ type TxOut struct {
 	5000원 2장을 모두 꺼내어 거래상대에게 주고, 잔금을 치뤄받는 형식.
 */
 func makeTx(from, to string, amount int) (*Tx, error) {
-	// 잔고가 송금액보다 적은지 확인
 	if BlockChain().BalanceByAddress(from) < amount {
 		return nil, errors.New("not enough money")
 	}
-
-	var txIns []*TxIn
 	var txOuts []*TxOut
+	var txIns []*TxIn
 	total := 0
-
-	//이전 Output에서 거래내역(amount)을 확인하며 원하는 송금액보다 큰 금액의 total,Input을 형성한다.
-	//아직 검증절차가 없는 상황이기에 Input이 무한히 만들어진다.
-	oldTxOuts := BlockChain().TxOutsByAddress(from)
-	for _, txOut := range oldTxOuts {
-		if total > amount {
+	uTxOuts := BlockChain().UTxOutsByAddress(from)
+	for _, uTxOut := range uTxOuts {
+		if total >= amount {
 			break
 		}
-		txIn := &TxIn{txOut.Owner, txOut.Amount}
+		txIn := &TxIn{uTxOut.TxID, uTxOut.Index, from}
 		txIns = append(txIns, txIn)
-		total += txIn.Amount
+		total += uTxOut.Amount
 	}
-	//total을 통해 잔돈 계산
-	change := total - amount
-	if change != 0 {
-		//from에게 줘야할 잔금을 Output에 추가
+
+	if change := total - amount; change != 0 {
 		changeTxOut := &TxOut{from, change}
 		txOuts = append(txOuts, changeTxOut)
 	}
-	//거래내역을 Output에 추가
 	txOut := &TxOut{to, amount}
 	txOuts = append(txOuts, txOut)
 	tx := &Tx{
-		ID:        "", // 밑의 tx.getID()에서 추가
+		ID:        "",
 		Timestamp: int(time.Now().Unix()),
 		TxIns:     txIns,
 		TxOuts:    txOuts,

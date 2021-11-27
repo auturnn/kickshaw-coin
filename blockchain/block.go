@@ -79,7 +79,7 @@ func (t *Tx) getID() {
 //Coinbase는 Blockchain에서 채굴자에게 주는 보상
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
-		{"COINBASE", minerReward},
+		{"", -1, "CONINBASE"},
 	}
 
 	txOuts := []*TxOut{
