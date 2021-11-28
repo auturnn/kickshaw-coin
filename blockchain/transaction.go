@@ -3,6 +3,8 @@ package blockchain
 import (
 	"errors"
 	"time"
+
+	"github.com/auturnn/kickshaw-coin/wallet"
 )
 
 const (
@@ -98,8 +100,8 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 }
 
 func (m *mempool) AddTx(to string, amount int) error {
-	// from("auturnn")은 나중에 추가.
-	tx, err := makeTx("auturnn", to, amount)
+	// from(wallet.Wallet().Address)은 나중에 추가.
+	tx, err := makeTx(wallet.Wallet().Address, to, amount)
 	if err != nil {
 		return err
 	}
@@ -110,7 +112,7 @@ func (m *mempool) AddTx(to string, amount int) error {
 //채굴시 작성
 func (m *mempool) TxToConfirm() []*Tx {
 	//coinbase의 모든 거래내역을 가져옴
-	coinbase := makeCoinbaseTx("auturnn")
+	coinbase := makeCoinbaseTx(wallet.Wallet().Address)
 	//모든 mempool내역을 가져온다
 	txs := m.Txs
 	//거래내역에 coinbase 거래내역을 추가
