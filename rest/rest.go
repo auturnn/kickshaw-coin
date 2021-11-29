@@ -8,6 +8,7 @@ import (
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
 	"github.com/auturnn/kickshaw-coin/utils"
+	"github.com/auturnn/kickshaw-coin/wallet"
 	"github.com/gorilla/mux"
 )
 
@@ -141,6 +142,18 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusCreated)
 }
 
+type myWalletResponse struct {
+	Address string `json:"address"`
+}
+
+func myWallet(rw http.ResponseWriter, r *http.Request) {
+	address := wallet.Wallet().Address
+	// json.NewEncoder(rw).Encode(struct{
+	// 	Address string
+	// }{Address: address})
+	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
+}
+
 func Start(aPort int) {
 	port = fmt.Sprintf(":%d", aPort)
 
@@ -152,6 +165,7 @@ func Start(aPort int) {
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", getBlock).Methods("GET")
 	router.HandleFunc("/balance/{address}", getBalance).Methods("GET")
 	router.HandleFunc("/mempool", getMempool).Methods("GET")
+	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 	fmt.Printf("Listening http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))

@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/auturnn/kickshaw-coin/utils"
@@ -30,6 +31,7 @@ func hasWalletFile() bool {
 	_, err := os.Stat(walletName)
 	return !os.IsNotExist(err)
 }
+
 func restoreKey() *ecdsa.PrivateKey {
 	keyAsBytes, err := os.ReadFile(walletName)
 	utils.HandleError(err)
@@ -41,10 +43,7 @@ func restoreKey() *ecdsa.PrivateKey {
 }
 
 func addressFromKey(key *ecdsa.PrivateKey) string {
-	x := key.X.Bytes()
-	y := key.Y.Bytes()
-	z := append(x, y...)
-	return fmt.Sprintf("%x", z)
+	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
 }
 
 func persistKey(key *ecdsa.PrivateKey) {
@@ -59,20 +58,58 @@ func createPrivKey() *ecdsa.PrivateKey {
 	return prk
 }
 
-func Sign(payload string, w *wallet) string {
-	pByte, err := hex.DecodeString(payload)
-	utils.HandleError(err)
-
-	r, s, err := ecdsa.Sign(rand.Reader, w.prk, pByte)
-	utils.HandleError(err)
-
-	signature := append(r.Bytes(), s.Bytes()...)
-	return fmt.Sprintf("%x", signature)
+func encodeBigInts(a, b []byte) string {
+	z := append(a, b...)
+	return fmt.Sprintf("%x", z)
 }
 
-// func verify(sign, hash, puk string) bool {
+//Sign somethings
+func Sign(payload string, w *wallet) string {
+	payloadBytes := decodeString(payload)
+	r, s, err := ecdsa.Sign(rand.Reader, w.prk, payloadBytes)
+	utils.HandleError(err)
 
-// }
+	return encodeBigInts(r.Bytes(), s.Bytes())
+}
+
+func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
+	bytes := decodeString(payload)
+
+	firstHalfBytes := bytes[:len(bytes)/2]
+	secondHalfBytes := bytes[len(bytes)/2:]
+
+	bigA, bigB := big.Int{}, big.Int{}
+	bigA.SetBytes(firstHalfBytes)
+	bigB.SetBytes(secondHalfBytes)
+
+	return &bigA, &bigB, nil
+}
+
+func decodeString(payload string) []byte {
+	bytes, err := hex.DecodeString(payload)
+	utils.HandleError(err)
+	return bytes
+}
+
+//verify
+func Verify(sign, payload, addr string) bool {
+	r, s, err := restoreBigInts(sign)
+	utils.HandleError(err)
+
+	x, y, err := restoreBigInts(addr)
+	utils.HandleError(err)
+
+	//not used privateKey
+	puK := ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     x,
+		Y:     y,
+	}
+
+	payloadBytes := decodeString(payload)
+	ok := ecdsa.Verify(&puK, payloadBytes, r, s)
+	return ok
+}
 
 func Wallet() *wallet {
 	if w == nil {

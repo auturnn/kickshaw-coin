@@ -24,6 +24,24 @@ type blockchain struct {
 var bc *blockchain
 var once sync.Once
 
+//is not mempool
+func Txs(b *blockchain) []*Tx {
+	var txs []*Tx
+	for _, block := range Blocks(b) {
+		txs = append(txs, block.Transactions...)
+	}
+	return txs
+}
+
+func FindTx(b *blockchain, targetID string) *Tx {
+	for _, tx := range Txs(b) {
+		if tx.ID == targetID {
+			return tx
+		}
+	}
+	return nil
+}
+
 func recalculrateDifficulty(bc *blockchain) int {
 	allBlocks := Blocks(bc)
 	newestBlock := allBlocks[0]
@@ -76,19 +94,21 @@ func BalanceByAddress(address string, bc *blockchain) (amount int) {
 	return amount
 }
 
-//Unspent Transaction Outputs By Address
 func UTxOutsByAddress(address string, bc *blockchain) []*UTxOut {
 	var uTxOuts []*UTxOut
 	creatorTxs := make(map[string]bool)
 	for _, block := range Blocks(bc) {
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
-				if input.Owner == address {
+				if input.Signature == "COINBASE" {
+					break
+				}
+				if FindTx(bc, input.TxID).TxOuts[input.Index].Address == address {
 					creatorTxs[input.TxID] = true
 				}
 			}
 			for index, output := range tx.TxOuts {
-				if output.Owner == address {
+				if output.Address == address {
 					if _, ok := creatorTxs[tx.ID]; !ok {
 						uTxOut := &UTxOut{tx.ID, index, output.Amount}
 						if !isOnMempool(uTxOut) {

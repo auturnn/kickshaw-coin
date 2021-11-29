@@ -72,11 +72,6 @@ func createBlock(prevHash string, height, diff int) *Block {
 	return block
 }
 
-func (t *Tx) getID() {
-	t.ID = utils.Hash(t)
-}
-
-//Coinbase는 Blockchain에서 채굴자에게 주는 보상
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
 		{"", -1, "CONINBASE"},

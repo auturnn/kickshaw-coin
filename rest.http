@@ -12,7 +12,7 @@ POST http://localhost:8080/blocks
 http://localhost:8080/blocks/865c907f23642d80403035f79587638fdeacd73b7c0f29ec78521b836b4ad3a5
 
 ###
-http://localhost:8080/balance/auturnn
+http://localhost:8080/balance/4d41b1dd8276e3feeafd9a4d8c9b5e572e639a33241976a979e5dc3dbeb5c7b719d0af78c2e39b988d7a6e1646abda1b866f383d1087ea7513d0aa70c5723fc8
 
 ###
 http://localhost:8080/balance/auturnn?total=true
@@ -20,6 +20,8 @@ http://localhost:8080/balance/auturnn?total=true
 ###
 http://localhost:8080/mempool
 
+###
+http://localhost:8080/wallet
 ###
 POST http://localhost:8080/transactions
 
