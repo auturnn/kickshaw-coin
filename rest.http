@@ -12,10 +12,10 @@ POST http://localhost:8080/blocks
 http://localhost:8080/blocks/865c907f23642d80403035f79587638fdeacd73b7c0f29ec78521b836b4ad3a5
 
 ###
-http://localhost:8080/balance/4d41b1dd8276e3feeafd9a4d8c9b5e572e639a33241976a979e5dc3dbeb5c7b719d0af78c2e39b988d7a6e1646abda1b866f383d1087ea7513d0aa70c5723fc8
+http://localhost:8080/balance/b997f8524e2e89030fa35f33d02dbcab524cb0679bd3fbe1540c1383229e2d2e74cf88b4057fdd7f9ea846bbcbb7fbc64c635ea5d5963f16202743fe8b72de08
 
 ###
-http://localhost:8080/balance/auturnn?total=true
+http://localhost:8080/balance/b997f8524e2e89030fa35f33d02dbcab524cb0679bd3fbe1540c1383229e2d2e74cf88b4057fdd7f9ea846bbcbb7fbc64c635ea5d5963f16202743fe8b72de08?total=true
 
 ###
 http://localhost:8080/mempool

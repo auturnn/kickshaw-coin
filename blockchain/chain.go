@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/auturnn/kickshaw-coin/db"
@@ -24,7 +23,6 @@ type blockchain struct {
 var bc *blockchain
 var once sync.Once
 
-//is not mempool
 func Txs(b *blockchain) []*Tx {
 	var txs []*Tx
 	for _, block := range Blocks(b) {
@@ -33,13 +31,24 @@ func Txs(b *blockchain) []*Tx {
 	return txs
 }
 
-func FindTx(b *blockchain, targetID string) *Tx {
-	for _, tx := range Txs(b) {
+func FindTx(bc *blockchain, targetID string) *Tx {
+	for _, tx := range Txs(bc) {
 		if tx.ID == targetID {
 			return tx
 		}
 	}
 	return nil
+}
+
+func getDifficulty(bc *blockchain) int {
+	if bc.Height == 0 {
+		return defaultDiffculty
+	} else if bc.Height%difficultyInterval == 0 {
+		//recalculrate the difficulty
+		return recalculrateDifficulty(bc)
+	} else {
+		return bc.CurrentDifficulty
+	}
 }
 
 func recalculrateDifficulty(bc *blockchain) int {
@@ -56,18 +65,6 @@ func recalculrateDifficulty(bc *blockchain) int {
 		return bc.CurrentDifficulty - 1
 	}
 	return bc.CurrentDifficulty
-}
-
-func getDifficulty(bc *blockchain) int {
-	if bc.Height == 0 {
-		return defaultDiffculty
-	} else if bc.Height%difficultyInterval == 0 {
-		//recalculrate the difficulty
-		return recalculrateDifficulty(bc)
-	} else {
-		return bc.CurrentDifficulty
-	}
-
 }
 
 func persistBlockchain(bc *blockchain) {
@@ -132,7 +129,6 @@ func BlockChain() *blockchain {
 			bc.restore(checkpoint)
 		}
 	})
-	fmt.Printf("NewestHash: %s\n", bc.NewestHash)
 	return bc
 }
 
