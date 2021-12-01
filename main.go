@@ -6,13 +6,7 @@ import (
 )
 
 func main() {
-	// blockchain.BlockChain().AddBlock("First")
-	// blockchain.BlockChain().AddBlock("second")
-	// blockchain.BlockChain().AddBlock("third")
 	defer db.Close()
 	cli.Start()
+	//http stateless ws stateful
 }
-
-// func main() {
-// 	wallet.Wallet()
-// }

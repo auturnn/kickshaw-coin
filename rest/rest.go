@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
+	"github.com/auturnn/kickshaw-coin/p2p"
 	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/auturnn/kickshaw-coin/wallet"
 	"github.com/gorilla/mux"
@@ -68,6 +69,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			URL:         url("/transactions"),
 			Method:      "POST",
 			Description: "Make a transaction",
+		},
+		{
+			URL:         url("/ws"),
+			Method:      "GET",
+			Description: "Upgrade to websocket",
 		},
 	}
 	json.NewEncoder(rw).Encode(data)
@@ -156,11 +162,28 @@ func myWallet(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
 }
 
+type addPeerPayload struct {
+	Address, Port string
+}
+
+func peers(rw http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		var payload addPeerPayload
+		json.NewDecoder(r.Body).Decode(&payload)
+		p2p.AddPeer(payload.Address, payload.Port, port)
+		rw.WriteHeader(http.StatusOK)
+	case "GET":
+		json.NewEncoder(rw).Encode(p2p.Peers)
+	}
+}
+
 func Start(aPort int) {
 	port = fmt.Sprintf(":%d", aPort)
 
 	router := mux.NewRouter()
 	router.Use(jsonContentTypeMiddleware)
+	router.Use(loggerMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", getStatus).Methods("GET")
 	router.HandleFunc("/blocks", getBlocks).Methods("GET", "POST")
@@ -169,6 +192,8 @@ func Start(aPort int) {
 	router.HandleFunc("/mempool", getMempool).Methods("GET")
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
+	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
+	router.HandleFunc("/peers", peers).Methods("POST", "GET")
 	fmt.Printf("Listening http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
@@ -177,6 +202,13 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	//adaptor pattern
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-type", "application/json")
+		next.ServeHTTP(rw, r)
+	})
+}
+
+func loggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL)
 		next.ServeHTTP(rw, r)
 	})
 }

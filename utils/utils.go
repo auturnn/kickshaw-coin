@@ -6,28 +6,37 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"strings"
 )
 
-func HandleError(err error)  {
-	if err != nil{
+func Splitter(s string, sep string, i int) string {
+	r := strings.Split(s, sep)
+	if len(r)-1 < i {
+		return ""
+	}
+	return r[i]
+}
+
+func HandleError(err error) {
+	if err != nil {
 		log.Panic(err)
 	}
 }
 
-func ToBytes(i interface{}) []byte  {
+func ToBytes(i interface{}) []byte {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
 	HandleError(encoder.Encode(i))
 	return buf.Bytes()
 }
 
-func FromBytes(i interface{}, data []byte)  {
+func FromBytes(i interface{}, data []byte) {
 	decoder := gob.NewDecoder(bytes.NewReader(data))
 	HandleError(decoder.Decode(i))
 }
 
 func Hash(i interface{}) string {
-	s := fmt.Sprintf("%v",i)
-	hash:= sha256.Sum256([]byte(s))
+	s := fmt.Sprintf("%v", i)
+	hash := sha256.Sum256([]byte(s))
 	return fmt.Sprintf("%x", hash)
 }
