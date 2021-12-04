@@ -145,3 +145,14 @@ func Blocks(bc *blockchain) (blocks []*Block) {
 	}
 	return blocks
 }
+
+func (bc *blockchain) Replace(newBlocks []*Block) {
+	bc.CurrentDifficulty = newBlocks[0].Difficulty
+	bc.Height = len(newBlocks)
+	bc.NewestHash = newBlocks[0].Hash
+	persistBlockchain(bc)
+	db.EmptyBlocks()
+	for _, block := range newBlocks {
+		persistBlock(block)
+	}
+}
