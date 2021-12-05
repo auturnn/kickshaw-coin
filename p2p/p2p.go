@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/auturnn/kickshaw-coin/blockchain"
 	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/gorilla/websocket"
 )
@@ -34,4 +35,16 @@ func AddPeer(addr, port, openPort string) {
 	utils.HandleError(err)
 	p := initPeer(conn, addr, port)
 	sendNewestBlock(p)
+}
+
+func BroadcastNewBlock(b *blockchain.Block) {
+	for _, p := range Peers.v {
+		notifyNewBlock(b, p)
+	}
+}
+
+func BroadcastNewTx(tx *blockchain.Tx) {
+	for _, p := range Peers.v {
+		notifyNewTx(tx, p)
+	}
 }

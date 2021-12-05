@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"net/http"
 	"sync"
 
 	"github.com/auturnn/kickshaw-coin/db"
@@ -15,9 +17,10 @@ const (
 )
 
 type blockchain struct {
-	NewestHash        string `json:"newestHash"`
-	Height            int    `json:"height"`
-	CurrentDifficulty int    `json:"currentDifficulty"`
+	NewestHash        string     `json:"newestHash"`
+	Height            int        `json:"height"`
+	CurrentDifficulty int        `json:"currentDifficulty"`
+	m                 sync.Mutex `json:"-"`
 }
 
 var bc *blockchain
@@ -71,12 +74,13 @@ func persistBlockchain(bc *blockchain) {
 	db.SaveCheckpoint(utils.ToBytes(bc))
 }
 
-func (bc *blockchain) AddBlock() {
+func (bc *blockchain) AddBlock() *Block {
 	block := createBlock(bc.NewestHash, bc.Height+1, getDifficulty(bc))
 	bc.NewestHash = block.Hash
 	bc.Height = block.Height
 	bc.CurrentDifficulty = block.Difficulty
 	persistBlockchain(bc)
+	return block
 }
 
 func (bc *blockchain) restore(data []byte) {
@@ -133,6 +137,8 @@ func BlockChain() *blockchain {
 }
 
 func Blocks(bc *blockchain) (blocks []*Block) {
+	bc.m.Lock()
+	defer bc.m.Unlock()
 	hashCursor := bc.NewestHash
 	for {
 		block, _ := FindBlock(hashCursor)
@@ -147,6 +153,8 @@ func Blocks(bc *blockchain) (blocks []*Block) {
 }
 
 func (bc *blockchain) Replace(newBlocks []*Block) {
+	bc.m.Lock()
+	defer bc.m.Unlock()
 	bc.CurrentDifficulty = newBlocks[0].Difficulty
 	bc.Height = len(newBlocks)
 	bc.NewestHash = newBlocks[0].Hash
@@ -154,5 +162,33 @@ func (bc *blockchain) Replace(newBlocks []*Block) {
 	db.EmptyBlocks()
 	for _, block := range newBlocks {
 		persistBlock(block)
+	}
+}
+
+func Status(bc *blockchain, rw http.ResponseWriter) {
+	bc.m.Lock()
+	defer bc.m.Unlock()
+
+	utils.HandleError(json.NewEncoder(rw).Encode(bc))
+}
+
+func (bc *blockchain) AddPeerBlock(newBlock *Block) {
+	bc.m.Lock()
+	mp.mt.Lock()
+	defer bc.m.Unlock()
+	defer mp.mt.Unlock()
+
+	bc.Height++
+	bc.CurrentDifficulty = newBlock.Difficulty
+	bc.NewestHash = newBlock.Hash
+
+	persistBlockchain(bc)
+	persistBlock(newBlock)
+
+	//mempool
+	for _, tx := range newBlock.Transactions {
+		if _, ok := mp.Txs[tx.ID]; ok {
+			delete(mp.Txs, tx.ID)
+		}
 	}
 }

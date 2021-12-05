@@ -66,7 +66,7 @@ func createBlock(prevHash string, height, diff int) *Block {
 	}
 	block.mine()
 	//mining이 언제 끝날지 모르기 때문에 끝난후에 이떄 추가
-	block.Transactions = Mempool.TxToConfirm()
+	block.Transactions = Mempool().TxToConfirm()
 	persistBlock(block)
 	return block
 }
