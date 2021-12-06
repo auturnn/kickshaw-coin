@@ -3,6 +3,7 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
 	"github.com/auturnn/kickshaw-coin/utils"
@@ -16,6 +17,7 @@ const (
 	MessageAllBlocksResponse
 	MessageNewBlockNotify
 	MessageNewTxNotify
+	MessageNewPeerNotify
 )
 
 type Message struct {
@@ -56,6 +58,11 @@ func notifyNewBlock(b *blockchain.Block, p *peer) {
 
 func notifyNewTx(tx *blockchain.Tx, p *peer) {
 	m := makeMessage(MessageNewTxNotify, tx)
+	p.inbox <- m
+}
+
+func notifyNewPeer(addr string, p *peer) {
+	m := makeMessage(MessageNewPeerNotify, addr)
 	p.inbox <- m
 }
 
@@ -104,6 +111,15 @@ func handlerMsg(m *Message, p *peer) {
 			var payload *blockchain.Tx
 			utils.HandleError(json.Unmarshal(m.Payload, &payload))
 			blockchain.Mempool().AddPeerTx(payload)
+		}
+	case MessageNewPeerNotify:
+		{
+			var payload string
+			utils.HandleError(json.Unmarshal(m.Payload, &payload))
+			fmt.Printf("I will now /ws upgrade %s", payload)
+			parts := strings.Split(payload, ":")
+			fmt.Println(parts)
+			AddPeer(parts[0], parts[1], parts[2], false)
 		}
 	}
 }
