@@ -14,15 +14,15 @@ import (
 )
 
 const (
-	hmsg       string = "9904b4524f5fe07772446b7872708b5a519caf85d121eb2acf94a397b54e5269"
-	prk        string = "307702010104200ed6703429d50dec9518e43017f5a726fe76add10a35dd1cbccd4dc0bf238f01a00a06082a8648ce3d030107a14403420004ddef78275593a2948737337825e36e9082982a4566e80c2070170d39b94ef4818d1fc0aae1ed3336e690007aafef7f388ac7f3a9352f21b9eef9a62ed4ad403a"
-	sign       string = "0c01e3c566d115d567f52606c83e5ae0869d8eda4526fe33bfbd4e00a956bb183f0c0cc6e6176443641bb49ebacfdfc713da6b8017ea94d36a1018ed2820698f"
+	// hmsg       string = "9904b4524f5fe07772446b7872708b5a519caf85d121eb2acf94a397b54e5269"
+	// prk        string = "307702010104200ed6703429d50dec9518e43017f5a726fe76add10a35dd1cbccd4dc0bf238f01a00a06082a8648ce3d030107a14403420004ddef78275593a2948737337825e36e9082982a4566e80c2070170d39b94ef4818d1fc0aae1ed3336e690007aafef7f388ac7f3a9352f21b9eef9a62ed4ad403a"
+	// sign       string = "0c01e3c566d115d567f52606c83e5ae0869d8eda4526fe33bfbd4e00a956bb183f0c0cc6e6176443641bb49ebacfdfc713da6b8017ea94d36a1018ed2820698f"
 	walletName string = "kickshaw.wallet"
 )
 
 type wallet struct {
-	prk     *ecdsa.PrivateKey
-	Address string
+	privateKey *ecdsa.PrivateKey
+	Address    string
 }
 
 var w *wallet
@@ -63,17 +63,25 @@ func encodeBigInts(a, b []byte) string {
 	return fmt.Sprintf("%x", z)
 }
 
-//Sign somethings
+func decodeString(payload string) []byte {
+	bytes, err := hex.DecodeString(payload)
+	utils.HandleError(err)
+	return bytes
+}
+
 func Sign(payload string, w *wallet) string {
 	payloadBytes := decodeString(payload)
-	r, s, err := ecdsa.Sign(rand.Reader, w.prk, payloadBytes)
+	r, s, err := ecdsa.Sign(rand.Reader, w.privateKey, payloadBytes)
 	utils.HandleError(err)
 
 	return encodeBigInts(r.Bytes(), s.Bytes())
 }
 
 func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
-	bytes := decodeString(payload)
+	bytes, err := hex.DecodeString(payload)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	firstHalfBytes := bytes[:len(bytes)/2]
 	secondHalfBytes := bytes[len(bytes)/2:]
@@ -85,13 +93,6 @@ func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
 	return &bigA, &bigB, nil
 }
 
-func decodeString(payload string) []byte {
-	bytes, err := hex.DecodeString(payload)
-	utils.HandleError(err)
-	return bytes
-}
-
-//verify
 func Verify(sign, payload, addr string) bool {
 	r, s, err := restoreBigInts(sign)
 	utils.HandleError(err)
@@ -116,15 +117,15 @@ func Wallet() *wallet {
 		w = &wallet{}
 		if hasWalletFile() {
 			// true = restore from file
-			w.prk = restoreKey()
+			w.privateKey = restoreKey()
 		} else {
 			//has a wallet already
 			// false = create prk , save to file
 			key := createPrivKey()
 			persistKey(key)
-			w.prk = key
+			w.privateKey = key
 		}
-		w.Address = addressFromKey(w.prk)
+		w.Address = addressFromKey(w.privateKey)
 	}
 	return w
 }
