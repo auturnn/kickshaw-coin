@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.4.2
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/yuin/goldmark v1.4.1 // indirect
-	go.etcd.io/bbolt v1.3.6 // indirect
+	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect

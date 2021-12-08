@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"os"
 
@@ -20,6 +21,29 @@ const (
 	walletName string = "kickshaw.wallet"
 )
 
+type fileLayer interface {
+	hasWalletFile() bool
+	writeFile(name string, data []byte, perm fs.FileMode) error
+	readFile(name string) ([]byte, error)
+}
+
+type layer struct{}
+
+var files fileLayer = layer{}
+
+func (layer) writeFile(name string, data []byte, perm fs.FileMode) error {
+	return os.WriteFile(name, data, perm)
+}
+
+func (layer) readFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
+}
+
+func (layer) hasWalletFile() bool {
+	_, err := os.Stat(walletName)
+	return !os.IsNotExist(err)
+}
+
 type wallet struct {
 	privateKey *ecdsa.PrivateKey
 	Address    string
@@ -27,13 +51,8 @@ type wallet struct {
 
 var w *wallet
 
-func hasWalletFile() bool {
-	_, err := os.Stat(walletName)
-	return !os.IsNotExist(err)
-}
-
 func restoreKey() *ecdsa.PrivateKey {
-	keyAsBytes, err := os.ReadFile(walletName)
+	keyAsBytes, err := files.readFile(walletName)
 	utils.HandleError(err)
 
 	key, err := x509.ParseECPrivateKey(keyAsBytes)
@@ -49,7 +68,7 @@ func addressFromKey(key *ecdsa.PrivateKey) string {
 func persistKey(key *ecdsa.PrivateKey) {
 	bytes, err := x509.MarshalECPrivateKey(key)
 	utils.HandleError(err)
-	utils.HandleError(os.WriteFile(walletName, bytes, 0644))
+	utils.HandleError(files.writeFile(walletName, bytes, 0644))
 }
 
 func createPrivKey() *ecdsa.PrivateKey {
@@ -115,7 +134,7 @@ func Verify(sign, payload, addr string) bool {
 func Wallet() *wallet {
 	if w == nil {
 		w = &wallet{}
-		if hasWalletFile() {
+		if files.hasWalletFile() {
 			// true = restore from file
 			w.privateKey = restoreKey()
 		} else {

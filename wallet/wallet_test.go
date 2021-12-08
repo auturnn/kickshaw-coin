@@ -3,6 +3,8 @@ package wallet
 import (
 	"crypto/x509"
 	"encoding/hex"
+	"io/fs"
+	"reflect"
 	"testing"
 )
 
@@ -12,6 +14,50 @@ const (
 	testSign    = "83fc24fc0f552361cbb94c931669451fbabc793c287f6fda94a638b2784ab129718e32235382bfee58ef257212f22c9348b2ba631ba3cd34a26fdb5a3b331bdf"
 )
 
+type fakeLayer struct {
+	fakeHasWalletFile func() bool
+}
+
+func (fakeLayer) writeFile(name string, data []byte, perm fs.FileMode) error {
+	return nil
+}
+
+func (fakeLayer) readFile(name string) ([]byte, error) {
+	return x509.MarshalECPrivateKey(maketestWallet().privateKey)
+}
+
+func (f fakeLayer) hasWalletFile() bool {
+	return f.fakeHasWalletFile()
+}
+
+func TestWallet(t *testing.T) {
+	t.Run("Wallet is created", func(t *testing.T) {
+		files = fakeLayer{
+			fakeHasWalletFile: func() bool {
+				t.Log("i have been called")
+				return false
+			},
+		}
+		tw := Wallet()
+		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
+			t.Error("New Wallet should return a new wallet instance")
+		}
+	})
+	t.Run("Wallet is restored", func(t *testing.T) {
+		files = fakeLayer{
+			fakeHasWalletFile: func() bool {
+				t.Log("i have been called")
+				return true
+			},
+		}
+		w = nil
+		tw := Wallet()
+		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
+			t.Error("New Wallet should return a new wallet instance")
+		}
+	})
+}
+
 func maketestWallet() *wallet {
 	w := &wallet{}
 	b, _ := hex.DecodeString(testPrivKey)
@@ -20,6 +66,7 @@ func maketestWallet() *wallet {
 	w.Address = addressFromKey(key)
 	return w
 }
+
 func TestSign(t *testing.T) {
 	s := Sign(testPayload, maketestWallet())
 	_, err := hex.DecodeString(s)
