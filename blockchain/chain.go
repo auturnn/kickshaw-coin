@@ -23,8 +23,17 @@ type blockchain struct {
 	m                 sync.Mutex `json:"-"`
 }
 
+type storage interface {
+	FindBlock(hash string) []byte
+	SaveBlock(hash string, data []byte)
+	SaveChain(data []byte)
+	LoadChain() []byte
+	DeleteAllBlocks()
+}
+
 var bc *blockchain
 var once sync.Once
+var dbStorage storage = db.DB{}
 
 func Txs(b *blockchain) []*Tx {
 	var txs []*Tx
@@ -71,7 +80,7 @@ func recalculrateDifficulty(bc *blockchain) int {
 }
 
 func persistBlockchain(bc *blockchain) {
-	db.SaveCheckpoint(utils.ToBytes(bc))
+	dbStorage.SaveChain(utils.ToBytes(bc))
 }
 
 func (bc *blockchain) AddBlock() *Block {
@@ -126,7 +135,7 @@ func UTxOutsByAddress(address string, bc *blockchain) []*UTxOut {
 func BlockChain() *blockchain {
 	once.Do(func() {
 		bc = &blockchain{Height: 0}
-		checkpoint := db.Checkpoint()
+		checkpoint := dbStorage.LoadChain()
 		if checkpoint == nil {
 			bc.AddBlock()
 		} else {
@@ -159,7 +168,7 @@ func (bc *blockchain) Replace(newBlocks []*Block) {
 	bc.Height = len(newBlocks)
 	bc.NewestHash = newBlocks[0].Hash
 	persistBlockchain(bc)
-	db.EmptyBlocks()
+	dbStorage.DeleteAllBlocks()
 	for _, block := range newBlocks {
 		persistBlock(block)
 	}
@@ -181,7 +190,6 @@ func (bc *blockchain) AddPeerBlock(newBlock *Block) {
 	bc.Height++
 	bc.CurrentDifficulty = newBlock.Difficulty
 	bc.NewestHash = newBlock.Hash
-
 	persistBlockchain(bc)
 	persistBlock(newBlock)
 

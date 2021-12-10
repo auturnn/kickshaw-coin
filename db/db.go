@@ -18,11 +18,33 @@ const (
 	checkpoint   = "checkpoint"
 )
 
+type DB struct{}
+
+func (DB) FindBlock(hash string) []byte {
+	return findBlock(hash)
+}
+
+func (DB) SaveBlock(hash string, data []byte) {
+	saveBlock(hash, data)
+}
+
+func (DB) SaveChain(data []byte) {
+	return
+}
+
+func (DB) LoadChain() []byte {
+	return loadChain()
+}
+
+func (DB) DeleteAllBlocks() {
+	emptyBlocks()
+}
+
 func getDBName() string {
 	return fmt.Sprintf("%s_%s.db", dbName, os.Args[1][6:])
 }
 
-func DB() *bolt.DB {
+func InitDB() {
 	if db == nil {
 		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
 		utils.HandleError(err)
@@ -37,24 +59,23 @@ func DB() *bolt.DB {
 		})
 		utils.HandleError(err)
 	}
-	return db
 }
 
 func Close() {
-	DB().Close()
+	db.Close()
 }
 
-func SaveBlock(hash string, data []byte) {
+func saveBlock(hash string, data []byte) {
 	fmt.Printf("Saving Block: %s \n", hash)
-	err := DB().Update(func(t *bolt.Tx) error {
+	err := db.Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(blocksBucket))
 		return bucket.Put([]byte(hash), data)
 	})
 	utils.HandleError(err)
 }
 
-func SaveCheckpoint(data []byte) {
-	err := DB().Update(func(t *bolt.Tx) error {
+func saveCheckpoint(data []byte) {
+	err := db.Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		return bucket.Put([]byte(checkpoint), data)
 	})
@@ -62,9 +83,9 @@ func SaveCheckpoint(data []byte) {
 }
 
 //Block is get bucket and search to hash data
-func Block(hash string) []byte {
+func findBlock(hash string) []byte {
 	var data []byte
-	DB().View(func(t *bolt.Tx) error {
+	db.View(func(t *bolt.Tx) error {
 		buk := t.Bucket([]byte(blocksBucket))
 		data = buk.Get([]byte(hash))
 		return nil
@@ -72,9 +93,9 @@ func Block(hash string) []byte {
 	return data
 }
 
-func Checkpoint() []byte {
+func loadChain() []byte {
 	var data []byte
-	DB().View(func(t *bolt.Tx) error {
+	db.View(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		data = bucket.Get([]byte(checkpoint))
 		return nil
@@ -82,8 +103,8 @@ func Checkpoint() []byte {
 	return data
 }
 
-func EmptyBlocks() {
-	DB().Update(func(t *bolt.Tx) error {
+func emptyBlocks() {
+	db.Update(func(t *bolt.Tx) error {
 		utils.HandleError(t.DeleteBucket([]byte(blocksBucket)))
 		_, err := t.CreateBucket([]byte(blocksBucket))
 		utils.HandleError(err)

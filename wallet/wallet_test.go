@@ -23,7 +23,7 @@ func (fakeLayer) writeFile(name string, data []byte, perm fs.FileMode) error {
 }
 
 func (fakeLayer) readFile(name string) ([]byte, error) {
-	return x509.MarshalECPrivateKey(maketestWallet().privateKey)
+	return x509.MarshalECPrivateKey(makeTestWallet().privateKey)
 }
 
 func (f fakeLayer) hasWalletFile() bool {
@@ -58,7 +58,7 @@ func TestWallet(t *testing.T) {
 	})
 }
 
-func maketestWallet() *wallet {
+func makeTestWallet() *wallet {
 	w := &wallet{}
 	b, _ := hex.DecodeString(testPrivKey)
 	key, _ := x509.ParseECPrivateKey(b)
@@ -68,7 +68,7 @@ func maketestWallet() *wallet {
 }
 
 func TestSign(t *testing.T) {
-	s := Sign(testPayload, maketestWallet())
+	s := Sign(testPayload, makeTestWallet())
 	_, err := hex.DecodeString(s)
 	if err != nil {
 		t.Errorf("Sign() should return a hex encoded string, got %s", s)
@@ -86,7 +86,7 @@ func TestVerify(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		w := maketestWallet()
+		w := makeTestWallet()
 		ok := Verify(testSign, tc.input, w.Address)
 		if ok != tc.ok {
 			t.Error("Verify() could not verify testSign and testPayload")

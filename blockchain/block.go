@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/auturnn/kickshaw-coin/db"
 	"github.com/auturnn/kickshaw-coin/utils"
 )
 
@@ -24,7 +23,7 @@ type Block struct {
 var ErrNotFound = errors.New("block not found")
 
 func persistBlock(b *Block) {
-	db.SaveBlock(b.Hash, utils.ToBytes(b))
+	dbStorage.SaveBlock(b.Hash, utils.ToBytes(b))
 }
 
 func (b *Block) restore(data []byte) {
@@ -32,7 +31,7 @@ func (b *Block) restore(data []byte) {
 }
 
 func FindBlock(hash string) (*Block, error) {
-	blockBytes := db.Block(hash)
+	blockBytes := dbStorage.FindBlock(hash)
 	if blockBytes == nil {
 		return nil, ErrNotFound
 	}
@@ -64,9 +63,9 @@ func createBlock(prevHash string, height, diff int) *Block {
 		Difficulty: diff,
 		Nonce:      0,
 	}
-	block.mine()
-	//mining이 언제 끝날지 모르기 때문에 끝난후에 이떄 추가
 	block.Transactions = Mempool().TxToConfirm()
+	//mining이 언제 끝날지 모르기 때문에 끝난후에 이떄 추가
+	block.mine()
 	persistBlock(block)
 	return block
 }
