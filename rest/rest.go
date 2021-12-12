@@ -13,23 +13,50 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var port string
+
 type url string
 
 func (u url) MashalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("http://localhost%s%s", port, u)), nil
+	url := fmt.Sprintf("http://localhost%s%s", port, u)
+	return []byte(url), nil
 }
 
-type urlDiscription struct {
+type urlDescription struct {
 	URL         url    `json:"url"`
 	Method      string `json:"method"`
 	Description string `json:"description"`
 	Payload     string `json:"payload,omitempty"`
 }
 
-var port string
+type addBlockBody struct {
+	Data string `json:"data"`
+}
+
+type errorResponse struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
+type balanceResponse struct {
+	Address string `json:"address"`
+	Balance int    `json:"balance"`
+}
+
+type addTxPayload struct {
+	To     string `json:"to"`
+	Amount int    `json:"amount"`
+}
+
+type myWalletResponse struct {
+	Address string `json:"address"`
+}
+
+type addPeerPayload struct {
+	Address, Port string
+}
 
 func documentation(rw http.ResponseWriter, r *http.Request) {
-	data := []urlDiscription{
+	data := []urlDescription{
 		{
 			URL:         url("/"),
 			Method:      "GET",
@@ -43,17 +70,18 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 		{
 			URL:         url("/blocks"),
 			Method:      "GET",
-			Description: "showing my blocks",
+			Description: "See All Blocks",
 		},
 		{
 			URL:         url("/blocks"),
 			Method:      "POST",
-			Description: "Add blocks",
+			Description: "Add A Block",
+			Payload:     "data:string",
 		},
 		{
 			URL:         url("/blocks/{hash}"),
 			Method:      "GET",
-			Description: "searching for block's id",
+			Description: "See A Block",
 		},
 		{
 			URL:         url("/balance/{address}"),
@@ -61,29 +89,15 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Description: "Get TxOuts for an Address",
 		},
 		{
-			URL:         url("/mempool"),
-			Method:      "GET",
-			Description: "Get Mempool",
-		},
-		{
-			URL:         url("/transactions"),
-			Method:      "POST",
-			Description: "Make a transaction",
-		},
-		{
 			URL:         url("/ws"),
 			Method:      "GET",
-			Description: "Upgrade to websocket",
+			Description: "Upgrade to WebSockets",
 		},
 	}
 	json.NewEncoder(rw).Encode(data)
 }
 
-type addBlockBody struct {
-	Data string `json:"data"`
-}
-
-func getBlocks(rw http.ResponseWriter, r *http.Request) {
+func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.BlockChain()))
@@ -92,10 +106,6 @@ func getBlocks(rw http.ResponseWriter, r *http.Request) {
 		p2p.BroadcastNewBlock(newBlock)
 		rw.WriteHeader(http.StatusCreated)
 	}
-}
-
-type errorResponse struct {
-	ErrorMessage string `json:"errorMessage"`
 }
 
 func getBlock(rw http.ResponseWriter, r *http.Request) {
@@ -113,11 +123,6 @@ func getStatus(rw http.ResponseWriter, r *http.Request) {
 	blockchain.Status(blockchain.BlockChain(), rw)
 }
 
-type balanceResponse struct {
-	Address string `json:"address"`
-	Balance int    `json:"balance"`
-}
-
 func getBalance(rw http.ResponseWriter, r *http.Request) {
 	address := mux.Vars(r)["address"]
 	total := r.URL.Query().Get("total")
@@ -128,11 +133,6 @@ func getBalance(rw http.ResponseWriter, r *http.Request) {
 	default:
 		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.UTxOutsByAddress(address, blockchain.BlockChain())))
 	}
-}
-
-type addTxPayload struct {
-	To     string `json:"to"`
-	Amount int    `json:"amount"`
 }
 
 func getMempool(rw http.ResponseWriter, r *http.Request) {
@@ -148,24 +148,13 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(rw).Encode(errorResponse{err.Error()})
 		return
 	}
-	go p2p.BroadcastNewTx(tx)
+	p2p.BroadcastNewTx(tx)
 	rw.WriteHeader(http.StatusCreated)
-}
-
-type myWalletResponse struct {
-	Address string `json:"address"`
 }
 
 func myWallet(rw http.ResponseWriter, r *http.Request) {
 	address := wallet.Wallet().Address
-	// json.NewEncoder(rw).Encode(struct{
-	// 	Address string
-	// }{Address: address})
 	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
-}
-
-type addPeerPayload struct {
-	Address, Port string
 }
 
 func peers(rw http.ResponseWriter, r *http.Request) {
@@ -180,26 +169,6 @@ func peers(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Start(aPort int) {
-	port = fmt.Sprintf(":%d", aPort)
-
-	router := mux.NewRouter()
-	router.Use(jsonContentTypeMiddleware)
-	router.Use(loggerMiddleware)
-	router.HandleFunc("/", documentation).Methods("GET")
-	router.HandleFunc("/status", getStatus).Methods("GET")
-	router.HandleFunc("/blocks", getBlocks).Methods("GET", "POST")
-	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", getBlock).Methods("GET")
-	router.HandleFunc("/balance/{address}", getBalance).Methods("GET")
-	router.HandleFunc("/mempool", getMempool).Methods("GET")
-	router.HandleFunc("/wallet", myWallet).Methods("GET")
-	router.HandleFunc("/transactions", transactions).Methods("POST")
-	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
-	router.HandleFunc("/peers", peers).Methods("POST", "GET")
-	fmt.Printf("Listening http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, router))
-}
-
 func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	//adaptor pattern
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -210,7 +179,26 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 
 func loggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.URL)
+		fmt.Println(r.RequestURI)
 		next.ServeHTTP(rw, r)
 	})
+}
+
+func Start(aPort int) {
+	port = fmt.Sprintf(":%d", aPort)
+
+	router := mux.NewRouter()
+	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
+	router.HandleFunc("/", documentation).Methods("GET")
+	router.HandleFunc("/status", getStatus).Methods("GET")
+	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", getBlock).Methods("GET")
+	router.HandleFunc("/balance/{address}", getBalance).Methods("GET")
+	router.HandleFunc("/mempool", getMempool).Methods("GET")
+	router.HandleFunc("/wallet", myWallet).Methods("GET")
+	router.HandleFunc("/transactions", transactions).Methods("POST")
+	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
+	router.HandleFunc("/peers", peers).Methods("GET", "POST")
+	fmt.Printf("Listening http://localhost%s\n", port)
+	log.Fatal(http.ListenAndServe(port, router))
 }

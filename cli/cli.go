@@ -3,7 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"runtime"
+	"os"
 
 	"github.com/auturnn/kickshaw-coin/explorer"
 	"github.com/auturnn/kickshaw-coin/rest"
@@ -12,10 +12,14 @@ import (
 func usage() {
 	fmt.Printf("Welcome to kickshaw-coin\n\n")
 	fmt.Printf("Please use the following flags:\n\n")
-	runtime.Goexit()
+	os.Exit(0)
 }
 
 func Start() {
+	if len(os.Args) == 1 {
+		usage()
+	}
+
 	mode := flag.String("mode", "rest", "Choose between 'html' or 'rest' or 'all'")
 	port := flag.Int("port", 8080, "Set port of the someone server")
 	hport := flag.Int("hport", 3000, "Set port of the html server for mode 'all' only")

@@ -69,57 +69,49 @@ func notifyNewPeer(addr string, p *peer) {
 func handlerMsg(m *Message, p *peer) {
 	switch m.Kind {
 	case MessageNewestBlock:
-		{
-			fmt.Printf("Received the newst block from %s\n", p.key)
-			var payload blockchain.Block
-			utils.HandleError(json.Unmarshal(m.Payload, &payload))
 
-			b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
-			utils.HandleError(err)
+		fmt.Printf("Received the newst block from %s\n", p.key)
+		var payload blockchain.Block
+		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 
-			if payload.Height >= b.Height {
-				fmt.Printf("Requesting all blocks from %s\n", p.key)
-				requestAllBlocks(p)
-			} else {
-				sendNewestBlock(p)
-			}
+		b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
+		utils.HandleError(err)
+
+		if payload.Height >= b.Height {
+			fmt.Printf("Requesting all blocks from %s\n", p.key)
+			requestAllBlocks(p)
+		} else {
+			sendNewestBlock(p)
 		}
 
 	case MessageAllBlocksrequest:
-		{
-			fmt.Printf("%s wants all the blocks\n", p.key)
-			sendAllBlocks(p)
-		}
+		fmt.Printf("%s wants all the blocks\n", p.key)
+		sendAllBlocks(p)
 
 	case MessageAllBlocksResponse:
-		{
-			fmt.Printf("Received all the blocks from %s\n", p.key)
-			var payload []*blockchain.Block
-			utils.HandleError(json.Unmarshal(m.Payload, &payload))
-			blockchain.BlockChain().Replace(payload)
-		}
+		fmt.Printf("Received all the blocks from %s\n", p.key)
+		var payload []*blockchain.Block
+		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		blockchain.BlockChain().Replace(payload)
+
 	case MessageNewBlockNotify:
-		{
-			fmt.Printf("New Blocks Notify~ for %s\n", p.key)
-			var payload *blockchain.Block
-			utils.HandleError(json.Unmarshal(m.Payload, &payload))
-			blockchain.BlockChain().AddPeerBlock(payload)
-		}
+		fmt.Printf("New Blocks Notify~ for %s\n", p.key)
+		var payload *blockchain.Block
+		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		blockchain.BlockChain().AddPeerBlock(payload)
+
 	case MessageNewTxNotify:
-		{
-			fmt.Printf("New Transaction Notify~")
-			var payload *blockchain.Tx
-			utils.HandleError(json.Unmarshal(m.Payload, &payload))
-			blockchain.Mempool().AddPeerTx(payload)
-		}
+		fmt.Printf("New Transaction Notify~")
+		var payload *blockchain.Tx
+		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		blockchain.Mempool().AddPeerTx(payload)
+
 	case MessageNewPeerNotify:
-		{
-			var payload string
-			utils.HandleError(json.Unmarshal(m.Payload, &payload))
-			fmt.Printf("I will now /ws upgrade %s", payload)
-			parts := strings.Split(payload, ":")
-			fmt.Println(parts)
-			AddPeer(parts[0], parts[1], parts[2], false)
-		}
+		var payload string
+		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		fmt.Printf("I will now /ws upgrade %s", payload)
+		parts := strings.Split(payload, ":")
+		fmt.Println(parts)
+		AddPeer(parts[0], parts[1], parts[2], false)
 	}
 }

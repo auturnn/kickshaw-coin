@@ -8,8 +8,6 @@ import (
 	"github.com/auturnn/kickshaw-coin/utils"
 )
 
-const difficulty int = 2
-
 type Block struct {
 	Hash         string `json:"hash"`
 	PrevHash     string `json:"prevHash"`
@@ -20,8 +18,6 @@ type Block struct {
 	Transactions []*Tx  `json:"transactions"`
 }
 
-var ErrNotFound = errors.New("block not found")
-
 func persistBlock(b *Block) {
 	dbStorage.SaveBlock(b.Hash, utils.ToBytes(b))
 }
@@ -29,6 +25,8 @@ func persistBlock(b *Block) {
 func (b *Block) restore(data []byte) {
 	utils.FromBytes(b, data)
 }
+
+var ErrNotFound = errors.New("block not found")
 
 func FindBlock(hash string) (*Block, error) {
 	blockBytes := dbStorage.FindBlock(hash)
@@ -68,23 +66,4 @@ func createBlock(prevHash string, height, diff int) *Block {
 	block.mine()
 	persistBlock(block)
 	return block
-}
-
-func makeCoinbaseTx(address string) *Tx {
-	txIns := []*TxIn{
-		{"", -1, "COINBASE"},
-	}
-
-	txOuts := []*TxOut{
-		{address, minerReward},
-	}
-
-	tx := Tx{
-		ID:        "",
-		Timestamp: int(time.Now().Unix()),
-		TxIns:     txIns,
-		TxOuts:    txOuts,
-	}
-	tx.getID()
-	return &tx
 }

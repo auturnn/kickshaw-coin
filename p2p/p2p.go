@@ -30,16 +30,15 @@ func AddPeer(addr, port, openPort string, broadcast bool) {
 	// node:4000으로 들어오면 node:3000과 중계
 	// peer -(request)> :4000 -(request(upgrade))> :3000
 	// port :4000 is requesting an upgrade from the port :3000
-	fmt.Printf("%s to connect to port %s\n", openPort, port)
+	fmt.Printf("%s wants to connect to port %s\n", openPort, port)
 	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("ws://%s:%s/ws?openPort=%s", addr, port, openPort), nil)
 	utils.HandleError(err)
 	p := initPeer(conn, addr, port)
 	if broadcast {
 		broadcastNewPeer(p)
 		return
-	} else {
-		sendNewestBlock(p)
 	}
+	sendNewestBlock(p)
 }
 
 func BroadcastNewBlock(b *blockchain.Block) {

@@ -15,7 +15,7 @@ const (
 
 type mempool struct {
 	Txs map[string]*Tx
-	mt  sync.Mutex
+	m   sync.Mutex
 }
 
 var mp *mempool
@@ -49,9 +49,9 @@ type TxOut struct {
 }
 
 type UTxOut struct {
-	TxID   string
-	Index  int
-	Amount int
+	TxID   string `json:"txId"`
+	Index  int    `json:"index"`
+	Amount int    `json:"amount"`
 }
 
 func (t *Tx) getID() {
@@ -63,6 +63,23 @@ func (t *Tx) sign() {
 		txIn.Signature = wallet.Sign(t.ID, wallet.Wallet())
 	}
 }
+
+func isOnMempool(uTxOut *UTxOut) bool {
+	exists := false
+OuterLoop: // label
+	for _, tx := range Mempool().Txs {
+		for _, input := range tx.TxIns {
+			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
+				exists = true
+				break OuterLoop
+			}
+		}
+	}
+	return exists
+}
+
+var ErrorNoMoney = errors.New("not enough Money")
+var ErrorNotValid = errors.New("Tx Invaild")
 
 func validate(tx *Tx) bool {
 	valid := true
@@ -83,24 +100,9 @@ func validate(tx *Tx) bool {
 	return valid
 }
 
-func isOnMempool(uTxOut *UTxOut) bool {
-	exists := false
-OuterLoop: // label
-	for _, tx := range Mempool().Txs {
-		for _, input := range tx.TxIns {
-			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
-				exists = true
-				break OuterLoop
-			}
-
-		}
-	}
-	return exists
-}
-
 func makeTx(from, to string, amount int) (*Tx, error) {
-	if BalanceByAddress(from, bc) < amount {
-		return nil, errors.New("not enough money")
+	if BalanceByAddress(from, BlockChain()) < amount {
+		return nil, ErrorNoMoney
 	}
 
 	var txOuts []*TxOut
@@ -116,7 +118,6 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 		txIns = append(txIns, txIn)
 		total += uTxOut.Amount
 	}
-
 	if change := total - amount; change != 0 {
 		changeTxOut := &TxOut{from, change}
 		txOuts = append(txOuts, changeTxOut)
@@ -141,9 +142,6 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	return tx, nil
 }
 
-var ErrorNoMoney = errors.New("not enough Money")
-var ErrorNotValid = errors.New("Tx Invaild")
-
 func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
 	tx, err := makeTx(wallet.Wallet().Address, to, amount)
 	if err != nil {
@@ -153,23 +151,42 @@ func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
 	return tx, nil
 }
 
-func (m *mempool) TxToConfirm() []*Tx {
+func makeCoinbaseTx(address string) *Tx {
+	txIns := []*TxIn{
+		{"", -1, "COINBASE"},
+	}
+
+	txOuts := []*TxOut{
+		{address, minerReward},
+	}
+
+	tx := Tx{
+		ID:        "",
+		Timestamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	tx.getID()
+	return &tx
+}
+
+func (mp *mempool) TxToConfirm() []*Tx {
 	//coinbase의 모든 거래내역을 가져옴
 	coinbase := makeCoinbaseTx(wallet.Wallet().Address)
 	//거래내역에 coinbase 거래내역을 추가
 	var txs []*Tx
-	for _, tx := range m.Txs {
+	for _, tx := range mp.Txs {
 		txs = append(txs, tx)
 	}
 	txs = append(txs, coinbase)
 	//confirm이 끝나면 memory pool에서 비워주어야함
-	m.Txs = make(map[string]*Tx)
+	mp.Txs = make(map[string]*Tx)
 	return txs
 }
 
-func (m *mempool) AddPeerTx(tx *Tx) {
-	m.mt.Lock()
-	defer m.mt.Unlock()
+func (mp *mempool) AddPeerTx(tx *Tx) {
+	mp.m.Lock()
+	defer mp.m.Unlock()
 
-	m.Txs[tx.ID] = tx
+	mp.Txs[tx.ID] = tx
 }

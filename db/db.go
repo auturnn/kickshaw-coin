@@ -8,7 +8,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-//data races => notion에 정리하기
 var db *bolt.DB
 
 const (
@@ -24,16 +23,16 @@ func (DB) FindBlock(hash string) []byte {
 	return findBlock(hash)
 }
 
+func (DB) LoadChain() []byte {
+	return loadChain()
+}
+
 func (DB) SaveBlock(hash string, data []byte) {
 	saveBlock(hash, data)
 }
 
 func (DB) SaveChain(data []byte) {
-	return
-}
-
-func (DB) LoadChain() []byte {
-	return loadChain()
+	saveCheckpoint(data)
 }
 
 func (DB) DeleteAllBlocks() {
@@ -47,8 +46,8 @@ func getDBName() string {
 func InitDB() {
 	if db == nil {
 		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
-		utils.HandleError(err)
 		db = dbPointer
+		utils.HandleError(err)
 
 		err = db.Update(func(t *bolt.Tx) error {
 			_, err = t.CreateBucketIfNotExists([]byte(blocksBucket))

@@ -18,24 +18,24 @@ http://localhost:4000/balance/b997f8524e2e89030fa35f33d02dbcab524cb0679bd3fbe154
 http://localhost:6000/balance/3932b8e9d10b9c7990da355304bc24a2d1355ff253e5577b8f30a5bf8fadb6eda122f5ac81fe14f7f8498e5a14171072cabb141f4c06732ab838057875ae1340?total=true
 
 ###
-http://localhost:2000/mempool
+http://localhost:3000/mempool
 
 ###
 http://localhost:4000/wallet
 ###
-POST http://localhost:6000/transactions
+POST http://localhost:4000/transactions
 
 {
     "to": "hi??",
-    "amount": 100
+    "amount": 50
 }
 
 ###
-POST http://localhost:2000/peers
+POST http://localhost:4000/peers
 
 {
     "address": "127.0.0.1",
-    "port": "6000"
+    "port": "3000"
 }
 
 ###

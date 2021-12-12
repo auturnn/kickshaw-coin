@@ -63,7 +63,7 @@ func makeTestWallet() *wallet {
 	b, _ := hex.DecodeString(testPrivKey)
 	key, _ := x509.ParseECPrivateKey(b)
 	w.privateKey = key
-	w.Address = addressFromKey(key)
+	w.Address = addrFromKey(key)
 	return w
 }
 

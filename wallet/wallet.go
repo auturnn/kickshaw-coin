@@ -15,9 +15,6 @@ import (
 )
 
 const (
-	// hmsg       string = "9904b4524f5fe07772446b7872708b5a519caf85d121eb2acf94a397b54e5269"
-	// prk        string = "307702010104200ed6703429d50dec9518e43017f5a726fe76add10a35dd1cbccd4dc0bf238f01a00a06082a8648ce3d030107a14403420004ddef78275593a2948737337825e36e9082982a4566e80c2070170d39b94ef4818d1fc0aae1ed3336e690007aafef7f388ac7f3a9352f21b9eef9a62ed4ad403a"
-	// sign       string = "0c01e3c566d115d567f52606c83e5ae0869d8eda4526fe33bfbd4e00a956bb183f0c0cc6e6176443641bb49ebacfdfc713da6b8017ea94d36a1018ed2820698f"
 	walletName string = "kickshaw.wallet"
 )
 
@@ -29,7 +26,10 @@ type fileLayer interface {
 
 type layer struct{}
 
-var files fileLayer = layer{}
+func (layer) hasWalletFile() bool {
+	_, err := os.Stat(walletName)
+	return !os.IsNotExist(err)
+}
 
 func (layer) writeFile(name string, data []byte, perm fs.FileMode) error {
 	return os.WriteFile(name, data, perm)
@@ -39,10 +39,7 @@ func (layer) readFile(name string) ([]byte, error) {
 	return os.ReadFile(name)
 }
 
-func (layer) hasWalletFile() bool {
-	_, err := os.Stat(walletName)
-	return !os.IsNotExist(err)
-}
+var files fileLayer = layer{}
 
 type wallet struct {
 	privateKey *ecdsa.PrivateKey
@@ -50,32 +47,6 @@ type wallet struct {
 }
 
 var w *wallet
-
-func restoreKey() *ecdsa.PrivateKey {
-	keyAsBytes, err := files.readFile(walletName)
-	utils.HandleError(err)
-
-	key, err := x509.ParseECPrivateKey(keyAsBytes)
-	utils.HandleError(err)
-
-	return key
-}
-
-func addressFromKey(key *ecdsa.PrivateKey) string {
-	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
-}
-
-func persistKey(key *ecdsa.PrivateKey) {
-	bytes, err := x509.MarshalECPrivateKey(key)
-	utils.HandleError(err)
-	utils.HandleError(files.writeFile(walletName, bytes, 0644))
-}
-
-func createPrivKey() *ecdsa.PrivateKey {
-	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	utils.HandleError(err)
-	return prk
-}
 
 func encodeBigInts(a, b []byte) string {
 	z := append(a, b...)
@@ -127,8 +98,33 @@ func Verify(sign, payload, addr string) bool {
 	}
 
 	payloadBytes := decodeString(payload)
-	ok := ecdsa.Verify(&puK, payloadBytes, r, s)
-	return ok
+	return ecdsa.Verify(&puK, payloadBytes, r, s)
+}
+
+func createPrivKey() *ecdsa.PrivateKey {
+	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	utils.HandleError(err)
+	return prk
+}
+
+func restoreKey() *ecdsa.PrivateKey {
+	keyAsBytes, err := files.readFile(walletName)
+	utils.HandleError(err)
+
+	key, err := x509.ParseECPrivateKey(keyAsBytes)
+	utils.HandleError(err)
+
+	return key
+}
+
+func persistKey(key *ecdsa.PrivateKey) {
+	bytes, err := x509.MarshalECPrivateKey(key)
+	utils.HandleError(err)
+	utils.HandleError(files.writeFile(walletName, bytes, 0644))
+}
+
+func addrFromKey(key *ecdsa.PrivateKey) string {
+	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
 }
 
 func Wallet() *wallet {
@@ -144,7 +140,7 @@ func Wallet() *wallet {
 			persistKey(key)
 			w.privateKey = key
 		}
-		w.Address = addressFromKey(w.privateKey)
+		w.Address = addrFromKey(w.privateKey)
 	}
 	return w
 }

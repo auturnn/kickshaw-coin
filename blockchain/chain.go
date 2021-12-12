@@ -25,9 +25,9 @@ type blockchain struct {
 
 type storage interface {
 	FindBlock(hash string) []byte
+	LoadChain() []byte
 	SaveBlock(hash string, data []byte)
 	SaveChain(data []byte)
-	LoadChain() []byte
 	DeleteAllBlocks()
 }
 
@@ -52,17 +52,6 @@ func FindTx(bc *blockchain, targetID string) *Tx {
 	return nil
 }
 
-func getDifficulty(bc *blockchain) int {
-	if bc.Height == 0 {
-		return defaultDiffculty
-	} else if bc.Height%difficultyInterval == 0 {
-		//recalculrate the difficulty
-		return recalculrateDifficulty(bc)
-	} else {
-		return bc.CurrentDifficulty
-	}
-}
-
 func recalculrateDifficulty(bc *blockchain) int {
 	allBlocks := Blocks(bc)
 	newestBlock := allBlocks[0]
@@ -77,6 +66,17 @@ func recalculrateDifficulty(bc *blockchain) int {
 		return bc.CurrentDifficulty - 1
 	}
 	return bc.CurrentDifficulty
+}
+
+func getDifficulty(bc *blockchain) int {
+	if bc.Height == 0 {
+		return defaultDiffculty
+	} else if bc.Height%difficultyInterval == 0 {
+		//recalculrate the difficulty
+		return recalculrateDifficulty(bc)
+	} else {
+		return bc.CurrentDifficulty
+	}
 }
 
 func persistBlockchain(bc *blockchain) {
@@ -96,17 +96,10 @@ func (bc *blockchain) restore(data []byte) {
 	utils.FromBytes(bc, data)
 }
 
-func BalanceByAddress(address string, bc *blockchain) (amount int) {
-	txOuts := UTxOutsByAddress(address, bc)
-	for _, txOut := range txOuts {
-		amount += txOut.Amount
-	}
-	return amount
-}
-
 func UTxOutsByAddress(address string, bc *blockchain) []*UTxOut {
 	var uTxOuts []*UTxOut
 	creatorTxs := make(map[string]bool)
+
 	for _, block := range Blocks(bc) {
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
@@ -130,6 +123,14 @@ func UTxOutsByAddress(address string, bc *blockchain) []*UTxOut {
 		}
 	}
 	return uTxOuts
+}
+
+func BalanceByAddress(address string, bc *blockchain) (amount int) {
+	txOuts := UTxOutsByAddress(address, bc)
+	for _, txOut := range txOuts {
+		amount += txOut.Amount
+	}
+	return amount
 }
 
 func BlockChain() *blockchain {
@@ -183,13 +184,14 @@ func Status(bc *blockchain, rw http.ResponseWriter) {
 
 func (bc *blockchain) AddPeerBlock(newBlock *Block) {
 	bc.m.Lock()
-	mp.mt.Lock()
+	mp.m.Lock()
 	defer bc.m.Unlock()
-	defer mp.mt.Unlock()
+	defer mp.m.Unlock()
 
 	bc.Height++
 	bc.CurrentDifficulty = newBlock.Difficulty
 	bc.NewestHash = newBlock.Hash
+
 	persistBlockchain(bc)
 	persistBlock(newBlock)
 
