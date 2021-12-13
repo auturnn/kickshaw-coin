@@ -7,9 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
-	"io/fs"
 	"math/big"
-	"os"
 
 	"github.com/auturnn/kickshaw-coin/utils"
 )
@@ -18,28 +16,22 @@ const (
 	walletName string = "kickshaw.wallet"
 )
 
-type fileLayer interface {
-	hasWalletFile() bool
-	writeFile(name string, data []byte, perm fs.FileMode) error
-	readFile(name string) ([]byte, error)
+type WalletLayer struct{}
+
+func (WalletLayer) GetAddress() string {
+	w.initWallet()
+	return w.Address
 }
 
-type layer struct{}
-
-func (layer) hasWalletFile() bool {
-	_, err := os.Stat(walletName)
-	return !os.IsNotExist(err)
+func (WalletLayer) SavePrivKey(prK *ecdsa.PrivateKey) {
+	w.initWallet()
+	w.privateKey = prK
 }
 
-func (layer) writeFile(name string, data []byte, perm fs.FileMode) error {
-	return os.WriteFile(name, data, perm)
+func (WalletLayer) GetPrivKey() (prK *ecdsa.PrivateKey) {
+	w.initWallet()
+	return w.privateKey
 }
-
-func (layer) readFile(name string) ([]byte, error) {
-	return os.ReadFile(name)
-}
-
-var files fileLayer = layer{}
 
 type wallet struct {
 	privateKey *ecdsa.PrivateKey
@@ -47,6 +39,12 @@ type wallet struct {
 }
 
 var w *wallet
+
+func createPrivKey() *ecdsa.PrivateKey {
+	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	utils.HandleError(err)
+	return prk
+}
 
 func encodeBigInts(a, b []byte) string {
 	z := append(a, b...)
@@ -59,7 +57,7 @@ func decodeString(payload string) []byte {
 	return bytes
 }
 
-func Sign(payload string, w *wallet) string {
+func Sign(payload string, prk *ecdsa.PrivateKey) string {
 	payloadBytes := decodeString(payload)
 	r, s, err := ecdsa.Sign(rand.Reader, w.privateKey, payloadBytes)
 	utils.HandleError(err)
@@ -101,12 +99,6 @@ func Verify(sign, payload, addr string) bool {
 	return ecdsa.Verify(&puK, payloadBytes, r, s)
 }
 
-func createPrivKey() *ecdsa.PrivateKey {
-	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	utils.HandleError(err)
-	return prk
-}
-
 func restoreKey() *ecdsa.PrivateKey {
 	keyAsBytes, err := files.readFile(walletName)
 	utils.HandleError(err)
@@ -127,7 +119,7 @@ func addrFromKey(key *ecdsa.PrivateKey) string {
 	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
 }
 
-func Wallet() *wallet {
+func (*wallet) initWallet() {
 	if w == nil {
 		w = &wallet{}
 		if files.hasWalletFile() {
@@ -142,7 +134,6 @@ func Wallet() *wallet {
 		}
 		w.Address = addrFromKey(w.privateKey)
 	}
-	return w
 }
 
 // func Start() {

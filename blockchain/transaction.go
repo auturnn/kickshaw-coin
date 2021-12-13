@@ -1,8 +1,8 @@
 package blockchain
 
 import (
+	"crypto/ecdsa"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/auturnn/kickshaw-coin/utils"
@@ -12,23 +12,6 @@ import (
 const (
 	minerReward int = 50
 )
-
-type mempool struct {
-	Txs map[string]*Tx
-	m   sync.Mutex
-}
-
-var mp *mempool
-var memOnce sync.Once
-
-func Mempool() *mempool {
-	memOnce.Do(func() {
-		mp = &mempool{
-			Txs: make(map[string]*Tx),
-		}
-	})
-	return mp
-}
 
 type Tx struct {
 	ID        string   `json:"id"`
@@ -60,22 +43,8 @@ func (t *Tx) getID() {
 
 func (t *Tx) sign() {
 	for _, txIn := range t.TxIns {
-		txIn.Signature = wallet.Sign(t.ID, wallet.Wallet())
+		txIn.Signature = wallet.Sign(t.ID, w.GetPrivKey())
 	}
-}
-
-func isOnMempool(uTxOut *UTxOut) bool {
-	exists := false
-OuterLoop: // label
-	for _, tx := range Mempool().Txs {
-		for _, input := range tx.TxIns {
-			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
-				exists = true
-				break OuterLoop
-			}
-		}
-	}
-	return exists
 }
 
 var ErrorNoMoney = errors.New("not enough Money")
@@ -142,14 +111,12 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	return tx, nil
 }
 
-func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
-	tx, err := makeTx(wallet.Wallet().Address, to, amount)
-	if err != nil {
-		return nil, err
-	}
-	m.Txs[tx.ID] = tx
-	return tx, nil
+type walletLayer interface {
+	GetAddress() string
+	GetPrivKey() *ecdsa.PrivateKey
 }
+
+var w walletLayer = wallet.WalletLayer{}
 
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
@@ -168,25 +135,4 @@ func makeCoinbaseTx(address string) *Tx {
 	}
 	tx.getID()
 	return &tx
-}
-
-func (mp *mempool) TxToConfirm() []*Tx {
-	//coinbase의 모든 거래내역을 가져옴
-	coinbase := makeCoinbaseTx(wallet.Wallet().Address)
-	//거래내역에 coinbase 거래내역을 추가
-	var txs []*Tx
-	for _, tx := range mp.Txs {
-		txs = append(txs, tx)
-	}
-	txs = append(txs, coinbase)
-	//confirm이 끝나면 memory pool에서 비워주어야함
-	mp.Txs = make(map[string]*Tx)
-	return txs
-}
-
-func (mp *mempool) AddPeerTx(tx *Tx) {
-	mp.m.Lock()
-	defer mp.m.Unlock()
-
-	mp.Txs[tx.ID] = tx
 }

@@ -153,7 +153,8 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 }
 
 func myWallet(rw http.ResponseWriter, r *http.Request) {
-	address := wallet.Wallet().Address
+	w := wallet.WalletLayer{}
+	address := w.GetAddress()
 	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
 }
 

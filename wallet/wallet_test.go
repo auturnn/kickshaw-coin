@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"io/fs"
-	"reflect"
 	"testing"
 )
 
@@ -29,34 +28,39 @@ func (fakeLayer) readFile(name string) ([]byte, error) {
 func (f fakeLayer) hasWalletFile() bool {
 	return f.fakeHasWalletFile()
 }
-
-func TestWallet(t *testing.T) {
-	t.Run("Wallet is created", func(t *testing.T) {
-		files = fakeLayer{
-			fakeHasWalletFile: func() bool {
-				t.Log("i have been called")
-				return false
-			},
-		}
-		tw := Wallet()
-		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
-			t.Error("New Wallet should return a new wallet instance")
-		}
-	})
-	t.Run("Wallet is restored", func(t *testing.T) {
-		files = fakeLayer{
-			fakeHasWalletFile: func() bool {
-				t.Log("i have been called")
-				return true
-			},
-		}
-		w = nil
-		tw := Wallet()
-		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
-			t.Error("New Wallet should return a new wallet instance")
-		}
-	})
+func TestInitWallet(t *testing.T) {
+	w.initWallet()
+	prk, _ := x509.MarshalECPrivateKey(w.privateKey)
+	t.Logf("w.Address:%s\nw.prK:%x", w.Address, prk)
 }
+
+// func TestWallet(t *testing.T) {
+// 	t.Run("Wallet is created", func(t *testing.T) {
+// 		files = fakeLayer{
+// 			fakeHasWalletFile: func() bool {
+// 				t.Log("i have been called")
+// 				return false
+// 			},
+// 		}
+// 		w.initWallet()
+// 		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
+// 			t.Error("New Wallet should return a new wallet instance")
+// 		}
+// 	})
+// 	t.Run("Wallet is restored", func(t *testing.T) {
+// 		files = fakeLayer{
+// 			fakeHasWalletFile: func() bool {
+// 				t.Log("i have been called")
+// 				return true
+// 			},
+// 		}
+// 		w = nil
+// 		tw := Wallet()
+// 		if reflect.TypeOf(tw) != reflect.TypeOf(&wallet{}) {
+// 			t.Error("New Wallet should return a new wallet instance")
+// 		}
+// 	})
+// }
 
 func makeTestWallet() *wallet {
 	w := &wallet{}
@@ -68,7 +72,9 @@ func makeTestWallet() *wallet {
 }
 
 func TestSign(t *testing.T) {
-	s := Sign(testPayload, makeTestWallet())
+	w.initWallet()
+	t.Log("Address:", w.Address)
+	s := Sign(testPayload, w.privateKey)
 	_, err := hex.DecodeString(s)
 	if err != nil {
 		t.Errorf("Sign() should return a hex encoded string, got %s", s)

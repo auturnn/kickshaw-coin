@@ -32,53 +32,11 @@ func (DB) SaveBlock(hash string, data []byte) {
 }
 
 func (DB) SaveChain(data []byte) {
-	saveCheckpoint(data)
+	saveChain(data)
 }
 
 func (DB) DeleteAllBlocks() {
 	emptyBlocks()
-}
-
-func getDBName() string {
-	return fmt.Sprintf("%s_%s.db", dbName, os.Args[1][6:])
-}
-
-func InitDB() {
-	if db == nil {
-		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
-		db = dbPointer
-		utils.HandleError(err)
-
-		err = db.Update(func(t *bolt.Tx) error {
-			_, err = t.CreateBucketIfNotExists([]byte(blocksBucket))
-			utils.HandleError(err)
-
-			_, err = t.CreateBucketIfNotExists([]byte(dataBucket))
-			return err
-		})
-		utils.HandleError(err)
-	}
-}
-
-func Close() {
-	db.Close()
-}
-
-func saveBlock(hash string, data []byte) {
-	fmt.Printf("Saving Block: %s \n", hash)
-	err := db.Update(func(t *bolt.Tx) error {
-		bucket := t.Bucket([]byte(blocksBucket))
-		return bucket.Put([]byte(hash), data)
-	})
-	utils.HandleError(err)
-}
-
-func saveCheckpoint(data []byte) {
-	err := db.Update(func(t *bolt.Tx) error {
-		bucket := t.Bucket([]byte(dataBucket))
-		return bucket.Put([]byte(checkpoint), data)
-	})
-	utils.HandleError(err)
 }
 
 //Block is get bucket and search to hash data
@@ -102,6 +60,23 @@ func loadChain() []byte {
 	return data
 }
 
+func saveBlock(hash string, data []byte) {
+	fmt.Printf("Saving Block: %s \n", hash)
+	err := db.Update(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(blocksBucket))
+		return bucket.Put([]byte(hash), data)
+	})
+	utils.HandleError(err)
+}
+
+func saveChain(data []byte) {
+	err := db.Update(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(dataBucket))
+		return bucket.Put([]byte(checkpoint), data)
+	})
+	utils.HandleError(err)
+}
+
 func emptyBlocks() {
 	db.Update(func(t *bolt.Tx) error {
 		utils.HandleError(t.DeleteBucket([]byte(blocksBucket)))
@@ -109,4 +84,29 @@ func emptyBlocks() {
 		utils.HandleError(err)
 		return nil
 	})
+}
+
+func getDBName() string {
+	return fmt.Sprintf("%s_%s.db", dbName, os.Args[1][6:])
+}
+
+func Close() {
+	db.Close()
+}
+
+func InitDB() {
+	if db == nil {
+		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
+		db = dbPointer
+		utils.HandleError(err)
+
+		err = db.Update(func(t *bolt.Tx) error {
+			_, err = t.CreateBucketIfNotExists([]byte(blocksBucket))
+			utils.HandleError(err)
+
+			_, err = t.CreateBucketIfNotExists([]byte(dataBucket))
+			return err
+		})
+		utils.HandleError(err)
+	}
 }
