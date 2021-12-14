@@ -33,12 +33,12 @@ OuterLoop: // label
 	return exists
 }
 
-func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
+func (mp *mempool) AddTx(to string, amount int) (*Tx, error) {
 	tx, err := makeTx(w.GetAddress(), to, amount)
 	if err != nil {
 		return nil, err
 	}
-	m.Txs[tx.ID] = tx
+	mp.Txs[tx.ID] = tx
 	return tx, nil
 }
 

@@ -50,6 +50,14 @@ func (t *Tx) sign() {
 var ErrorNoMoney = errors.New("not enough Money")
 var ErrorNotValid = errors.New("Tx Invaild")
 
+type walletLayer interface {
+	GetAddress() string
+	GetPrivKey() *ecdsa.PrivateKey
+	// InitWallet()
+}
+
+var w walletLayer = wallet.WalletLayer{}
+
 func validate(tx *Tx) bool {
 	valid := true
 	for _, txIn := range tx.TxIns {
@@ -110,13 +118,6 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 
 	return tx, nil
 }
-
-type walletLayer interface {
-	GetAddress() string
-	GetPrivKey() *ecdsa.PrivateKey
-}
-
-var w walletLayer = wallet.WalletLayer{}
 
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
