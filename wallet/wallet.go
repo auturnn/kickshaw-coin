@@ -19,51 +19,19 @@ const (
 type WalletLayer struct{}
 
 func (WalletLayer) GetAddress() string {
-	w.initWallet()
-	return w.Address
+	return initWallet().address
 }
 
-func (WalletLayer) SavePrivKey(prK *ecdsa.PrivateKey) {
-	w.initWallet()
-	w.privateKey = prK
-}
-
-func (WalletLayer) GetPrivKey() (prK *ecdsa.PrivateKey) {
-	w.initWallet()
-	return w.privateKey
+func (WalletLayer) GetPrivKey() *ecdsa.PrivateKey {
+	return initWallet().privateKey
 }
 
 type wallet struct {
 	privateKey *ecdsa.PrivateKey
-	Address    string
+	address    string
 }
 
 var w *wallet
-
-func createPrivKey() *ecdsa.PrivateKey {
-	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	utils.HandleError(err)
-	return prk
-}
-
-func encodeBigInts(a, b []byte) string {
-	z := append(a, b...)
-	return fmt.Sprintf("%x", z)
-}
-
-func decodeString(payload string) []byte {
-	bytes, err := hex.DecodeString(payload)
-	utils.HandleError(err)
-	return bytes
-}
-
-func Sign(payload string, prk *ecdsa.PrivateKey) string {
-	payloadBytes := decodeString(payload)
-	r, s, err := ecdsa.Sign(rand.Reader, w.privateKey, payloadBytes)
-	utils.HandleError(err)
-
-	return encodeBigInts(r.Bytes(), s.Bytes())
-}
 
 func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
 	bytes, err := hex.DecodeString(payload)
@@ -79,6 +47,20 @@ func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
 	bigB.SetBytes(secondHalfBytes)
 
 	return &bigA, &bigB, nil
+}
+
+func decodeString(payload string) []byte {
+	bytes, err := hex.DecodeString(payload)
+	utils.HandleError(err)
+	return bytes
+}
+
+func Sign(payload string, prk *ecdsa.PrivateKey) string {
+	payloadBytes := decodeString(payload)
+	r, s, err := ecdsa.Sign(rand.Reader, prk, payloadBytes)
+	utils.HandleError(err)
+
+	return encodeBigInts(r.Bytes(), s.Bytes())
 }
 
 func Verify(sign, payload, addr string) bool {
@@ -99,6 +81,27 @@ func Verify(sign, payload, addr string) bool {
 	return ecdsa.Verify(&puK, payloadBytes, r, s)
 }
 
+func encodeBigInts(a, b []byte) string {
+	z := append(a, b...)
+	return fmt.Sprintf("%x", z)
+}
+
+func addrFromKey(key *ecdsa.PrivateKey) string {
+	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
+}
+
+func persistKey(key *ecdsa.PrivateKey) {
+	bytes, err := x509.MarshalECPrivateKey(key)
+	utils.HandleError(err)
+	utils.HandleError(files.writeFile(walletName, bytes, 0644))
+}
+
+func createPrivKey() *ecdsa.PrivateKey {
+	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	utils.HandleError(err)
+	return prk
+}
+
 func restoreKey() *ecdsa.PrivateKey {
 	keyAsBytes, err := files.readFile(walletName)
 	utils.HandleError(err)
@@ -109,17 +112,7 @@ func restoreKey() *ecdsa.PrivateKey {
 	return key
 }
 
-func persistKey(key *ecdsa.PrivateKey) {
-	bytes, err := x509.MarshalECPrivateKey(key)
-	utils.HandleError(err)
-	utils.HandleError(files.writeFile(walletName, bytes, 0644))
-}
-
-func addrFromKey(key *ecdsa.PrivateKey) string {
-	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
-}
-
-func (*wallet) initWallet() {
+func initWallet() *wallet {
 	if w == nil {
 		w = &wallet{}
 		if files.hasWalletFile() {
@@ -132,8 +125,9 @@ func (*wallet) initWallet() {
 			persistKey(key)
 			w.privateKey = key
 		}
-		w.Address = addrFromKey(w.privateKey)
+		w.address = addrFromKey(w.privateKey)
 	}
+	return w
 }
 
 // func Start() {
