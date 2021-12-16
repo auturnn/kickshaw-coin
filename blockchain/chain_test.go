@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/auturnn/kickshaw-coin/utils"
 )
@@ -58,29 +59,181 @@ func TestBlockChain(t *testing.T) {
 }
 
 func TestBlocks(t *testing.T) {
+	blocks := []*Block{
+		{PrevHash: "test"},
+		{PrevHash: ""},
+	}
+
 	fakeBlocks := 0
 	dbStorage = fakeDB{
 		fakeFindBlock: func() []byte {
-			var b *Block
-			if fakeBlocks == 0 {
-				b = &Block{
-					Height:   1,
-					PrevHash: "test",
-				}
-			}
-			if fakeBlocks == 1 {
-				b = &Block{
-					Height: 1,
-				}
-			}
-			fakeBlocks++
-			return utils.ToBytes(b)
+			defer func() {
+				fakeBlocks++
+			}()
+			return utils.ToBytes(blocks[fakeBlocks])
 		},
 	}
 
 	bc := &blockchain{}
-	blocks := Blocks(bc)
-	if reflect.TypeOf(blocks) != reflect.TypeOf([]*Block{}) {
+	blocksResult := Blocks(bc)
+	if reflect.TypeOf(blocksResult) != reflect.TypeOf([]*Block{}) {
 		t.Error("Blocks() should return a slice of block")
+	}
+}
+
+func TestGetDifficulty(t *testing.T) {
+	t.Run("getDefficulty sholud CurrentDifficulty +1", func(t *testing.T) {
+		type test struct {
+			height int
+			want   int
+		}
+		blocks := []*Block{
+			{PrevHash: "test"},
+			{PrevHash: "test"},
+			{PrevHash: "test"},
+			{PrevHash: "test"},
+			{PrevHash: ""},
+		}
+
+		fakeblock := 0
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				defer func() {
+					fakeblock++
+				}()
+				return utils.ToBytes(blocks[fakeblock])
+			},
+		}
+		tests := []test{
+			{height: 0, want: defaultDiffculty},
+			{height: 2, want: defaultDiffculty},
+			{height: 5, want: 3},
+		}
+		for _, tc := range tests {
+			bc := &blockchain{Height: tc.height, CurrentDifficulty: defaultDiffculty}
+			got := getDifficulty(bc)
+			if got != tc.want {
+				t.Errorf("getDifiiculty() should return %d got %d", tc.want, got)
+			}
+		}
+	})
+
+	t.Run("getDefficulty sholud CurrentDifficulty -1", func(t *testing.T) {
+		type test struct {
+			height int
+			want   int
+		}
+		blocks := []*Block{
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			// {PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			{PrevHash: ""},
+		}
+
+		fakeblock := 0
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				defer func() {
+					fakeblock++
+				}()
+				return utils.ToBytes(blocks[fakeblock])
+			},
+		}
+		tests := []test{
+			{height: 0, want: defaultDiffculty},
+			{height: 2, want: defaultDiffculty},
+			{height: 4, want: defaultDiffculty},
+			{height: 5, want: 1},
+		}
+		for _, tc := range tests {
+			bc := &blockchain{Height: tc.height, CurrentDifficulty: defaultDiffculty}
+			got := getDifficulty(bc)
+			if got != tc.want {
+				t.Errorf("getDifiiculty() should return %d got %d", tc.want, got)
+			}
+		}
+	})
+}
+
+func TestAddPeerBlock(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		bc := &blockchain{
+			Height:            1,
+			CurrentDifficulty: 1,
+			NewestHash:        "xx",
+		}
+		mp.Txs["test"] = &Tx{}
+		newBlock := &Block{
+			Difficulty: 2,
+			Hash:       "test",
+			Transactions: []*Tx{
+				{ID: "test"},
+			},
+		}
+		bc.AddPeerBlock(newBlock)
+		if bc.CurrentDifficulty != 2 || bc.Height != 2 || bc.NewestHash != "test" {
+			t.Error("Addpeerblock should mutate the blockchain")
+		}
+	})
+}
+
+func TestReplace(t *testing.T) {
+	bc := &blockchain{
+		Height:            1,
+		CurrentDifficulty: 1,
+		NewestHash:        "xx",
+	}
+	blocks := []*Block{
+		{Difficulty: 2, Hash: "test"},
+		{Difficulty: 2, Hash: "test"},
+	}
+	bc.Replace(blocks)
+	if bc.CurrentDifficulty != 2 || bc.Height != 2 || bc.NewestHash != "test" {
+		t.Error("Replace() should mutate the blockchain")
+	}
+}
+
+func TestUTxOutsByAddress(t *testing.T) {
+	tx := makeCoinbaseTx(w.GetAddress())
+	txs := []*Tx{
+		tx,
+		{
+			ID: "",
+			TxIns: []*TxIn{
+				{TxID: tx.ID, Index: 0},
+			},
+			TxOuts: []*TxOut{
+				{Address: "to", Amount: 50},
+			},
+		},
+	}
+
+	dbStorage = fakeDB{
+		fakeFindBlock: func() []byte {
+			block := &Block{
+				PrevHash:     "",
+				Transactions: txs,
+			}
+			return utils.ToBytes(block)
+		},
+		fakeLoadChain: func() []byte {
+			bc := &blockchain{
+				Height:            1,
+				CurrentDifficulty: 2,
+				NewestHash:        tx.ID,
+			}
+			return utils.ToBytes(bc)
+		},
+	}
+
+	utxOuts := UTxOutsByAddress(w.GetAddress(), BlockChain())
+	total := 0
+	for _, utxOut := range utxOuts {
+		total += utxOut.Amount
+	}
+	if total != 50 {
+		t.Error("Error!")
 	}
 }

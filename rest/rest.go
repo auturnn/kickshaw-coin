@@ -142,12 +142,14 @@ func getMempool(rw http.ResponseWriter, r *http.Request) {
 func transactions(rw http.ResponseWriter, r *http.Request) {
 	var payload addTxPayload
 	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload))
+
 	tx, err := blockchain.Mempool().AddTx(payload.To, payload.Amount)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(rw).Encode(errorResponse{err.Error()})
 		return
 	}
+
 	p2p.BroadcastNewTx(tx)
 	rw.WriteHeader(http.StatusCreated)
 }
@@ -168,21 +170,6 @@ func peers(rw http.ResponseWriter, r *http.Request) {
 	case "GET":
 		json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
 	}
-}
-
-func jsonContentTypeMiddleware(next http.Handler) http.Handler {
-	//adaptor pattern
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Add("Content-type", "application/json")
-		next.ServeHTTP(rw, r)
-	})
-}
-
-func loggerMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.RequestURI)
-		next.ServeHTTP(rw, r)
-	})
 }
 
 func Start(aPort int) {

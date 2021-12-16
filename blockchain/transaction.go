@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"crypto/ecdsa"
-	"errors"
 	"time"
 
 	"github.com/auturnn/kickshaw-coin/utils"
@@ -12,6 +11,14 @@ import (
 const (
 	minerReward int = 50
 )
+
+type walletLayer interface {
+	GetAddress() string
+	GetPrivKey() *ecdsa.PrivateKey
+	// InitWallet()
+}
+
+var w walletLayer = wallet.WalletLayer{}
 
 type Tx struct {
 	ID        string   `json:"id"`
@@ -47,17 +54,6 @@ func (t *Tx) sign() {
 	}
 }
 
-var ErrorNoMoney = errors.New("not enough Money")
-var ErrorNotValid = errors.New("Tx Invaild")
-
-type walletLayer interface {
-	GetAddress() string
-	GetPrivKey() *ecdsa.PrivateKey
-	// InitWallet()
-}
-
-var w walletLayer = wallet.WalletLayer{}
-
 func validate(tx *Tx) bool {
 	valid := true
 	for _, txIn := range tx.TxIns {
@@ -79,12 +75,12 @@ func validate(tx *Tx) bool {
 
 func makeTx(from, to string, amount int) (*Tx, error) {
 	if BalanceByAddress(from, BlockChain()) < amount {
-		return nil, ErrorNoMoney
+		return nil, utils.ErrorNoMoney
 	}
 
 	var txOuts []*TxOut
 	var txIns []*TxIn
-	total := 0
+	total := 0 //is not balance
 
 	uTxOuts := UTxOutsByAddress(from, BlockChain())
 	for _, uTxOut := range uTxOuts {
@@ -95,6 +91,7 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 		txIns = append(txIns, txIn)
 		total += uTxOut.Amount
 	}
+
 	if change := total - amount; change != 0 {
 		changeTxOut := &TxOut{from, change}
 		txOuts = append(txOuts, changeTxOut)
@@ -113,7 +110,7 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	tx.sign()
 
 	if !validate(tx) {
-		return nil, ErrorNoMoney
+		return nil, utils.ErrorNoMoney
 	}
 
 	return tx, nil

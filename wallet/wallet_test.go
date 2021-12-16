@@ -14,11 +14,6 @@ const (
 )
 
 func TestInitWallet(t *testing.T) {
-	prk, _ := x509.MarshalECPrivateKey(initWallet().privateKey)
-	t.Logf("w.Address:%s\nw.prK:%x", w.address, prk)
-}
-
-func TestWallet(t *testing.T) {
 	t.Run("Wallet is created", func(t *testing.T) {
 		files = fakeLayer{
 			fakeHasWalletFile: func() bool {
@@ -86,5 +81,14 @@ func TestRestoreBigInts(t *testing.T) {
 	_, _, err := restoreBigInts("error Payload")
 	if err == nil {
 		t.Error("restoreBigInts() should return error when payload is not hex")
+	}
+}
+
+func TestGetAddress(t *testing.T) {
+	w := &WalletLayer{}
+	prk := w.GetPrivKey()
+	addr := addrFromKey(prk)
+	if reflect.TypeOf(addr) != reflect.TypeOf(w.GetAddress()) {
+		t.Error("GetAddress() should return string")
 	}
 }
