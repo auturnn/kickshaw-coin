@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -61,7 +60,6 @@ func recalculrateDifficulty(bc *blockchain) int {
 	actualTime := (newestBlock.Timestamp / 60) - (lastRecalculratedBlock.Timestamp / 60)
 	//expectedTime : 의도한 블럭생성주기
 	expectedTime := difficultyInterval * blockInterval
-	fmt.Printf("actualtime:%d, 생성주기:%d\n", actualTime, (expectedTime + allowedRange))
 	if actualTime < (expectedTime - allowedRange) {
 		return bc.CurrentDifficulty + 1
 	} else if actualTime > (expectedTime + allowedRange) {

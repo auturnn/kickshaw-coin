@@ -12,6 +12,8 @@ import (
 func usage() {
 	fmt.Printf("Welcome to kickshaw-coin\n\n")
 	fmt.Printf("Please use the following flags:\n\n")
+	fmt.Printf("-mode  :   Choose between 'html' or 'rest' or 'all'\n")
+	fmt.Printf("-port  :   Set port of the someone server\n")
 	os.Exit(0)
 }
 
@@ -21,9 +23,7 @@ func Start() {
 	}
 
 	mode := flag.String("mode", "rest", "Choose between 'html' or 'rest' or 'all'")
-	port := flag.Int("port", 8080, "Set port of the someone server")
-	hport := flag.Int("hport", 3000, "Set port of the html server for mode 'all' only")
-	rport := flag.Int("rport", 8080, "Set port of the REST API server for mode 'all' only")
+	port := flag.Int("port", 8333, "Set port of the someone server")
 	flag.Parse()
 
 	switch *mode {
@@ -32,8 +32,8 @@ func Start() {
 	case "html":
 		explorer.Start(*port)
 	case "all":
-		go explorer.Start(*hport)
-		rest.Start(*rport)
+		go explorer.Start(4000)
+		rest.Start(8333)
 	default:
 		usage()
 	}

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"crypto/ecdsa"
 	"reflect"
 	"sync"
 	"testing"
@@ -8,22 +9,6 @@ import (
 
 	"github.com/auturnn/kickshaw-coin/utils"
 )
-
-type fakeDB struct {
-	fakeLoadChain func() []byte
-	fakeFindBlock func() []byte
-}
-
-func (f fakeDB) FindBlock(hash string) []byte {
-	return f.fakeFindBlock()
-}
-
-func (f fakeDB) LoadChain() []byte {
-	return f.fakeLoadChain()
-}
-func (fakeDB) SaveBlock(hash string, data []byte) {}
-func (fakeDB) SaveChain(data []byte)              {}
-func (fakeDB) DeleteAllBlocks()                   {}
 
 func TestBlockChain(t *testing.T) {
 	//if
@@ -124,11 +109,10 @@ func TestGetDifficulty(t *testing.T) {
 			want   int
 		}
 		blocks := []*Block{
-			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
-			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
-			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
-			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
-			// {PrevHash: "test", Timestamp: int(time.Now().Unix() - 400)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 300)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 300)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 300)},
+			{PrevHash: "test", Timestamp: int(time.Now().Unix() - 300)},
 			{PrevHash: ""},
 		}
 
@@ -159,11 +143,6 @@ func TestGetDifficulty(t *testing.T) {
 
 func TestAddPeerBlock(t *testing.T) {
 	t.Run("", func(t *testing.T) {
-		bc := &blockchain{
-			Height:            1,
-			CurrentDifficulty: 1,
-			NewestHash:        "xx",
-		}
 		mp.Txs["test"] = &Tx{}
 		newBlock := &Block{
 			Difficulty: 2,
@@ -172,9 +151,10 @@ func TestAddPeerBlock(t *testing.T) {
 				{ID: "test"},
 			},
 		}
+		bc = &blockchain{}
 		bc.AddPeerBlock(newBlock)
-		if bc.CurrentDifficulty != 2 || bc.Height != 2 || bc.NewestHash != "test" {
-			t.Error("Addpeerblock should mutate the blockchain")
+		if mp.Txs["test"] != nil {
+			t.Error("AddPeerBlock() should do not has transaction")
 		}
 	})
 }
@@ -196,6 +176,19 @@ func TestReplace(t *testing.T) {
 }
 
 func TestUTxOutsByAddress(t *testing.T) {
+	fw = &fakeWallet{}
+	fw.priv = createPrivKey()
+	fw.addr = addrFromKey(fw.priv)
+
+	w = fakeWalletLayer{
+		fakeGetAddress: func() string {
+			return fw.addr
+		},
+		fakeGetPrivKey: func() *ecdsa.PrivateKey {
+			return fw.priv
+		},
+	}
+
 	tx := makeCoinbaseTx(w.GetAddress())
 	txs := []*Tx{
 		tx,
@@ -217,14 +210,6 @@ func TestUTxOutsByAddress(t *testing.T) {
 				Transactions: txs,
 			}
 			return utils.ToBytes(block)
-		},
-		fakeLoadChain: func() []byte {
-			bc := &blockchain{
-				Height:            1,
-				CurrentDifficulty: 2,
-				NewestHash:        tx.ID,
-			}
-			return utils.ToBytes(bc)
 		},
 	}
 
