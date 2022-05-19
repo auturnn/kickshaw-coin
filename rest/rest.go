@@ -10,6 +10,7 @@ import (
 	"github.com/auturnn/kickshaw-coin/p2p"
 	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/auturnn/kickshaw-coin/wallet"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -176,6 +177,7 @@ func Start(aPort int) {
 	port = fmt.Sprintf(":%d", aPort)
 
 	router := mux.NewRouter()
+
 	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", getStatus).Methods("GET")
@@ -188,5 +190,5 @@ func Start(aPort int) {
 	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 	router.HandleFunc("/peers", peers).Methods("GET", "POST")
 	fmt.Printf("Listening http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, router))
+	log.Fatal(http.ListenAndServe(port, handlers.CORS()(router)))
 }

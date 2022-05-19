@@ -1,41 +1,41 @@
 ###
-http://localhost:3000
+http://localhost:8080
 ###
-http://localhost:3000/blocks
+http://localhost:8080/blocks
 ###
 http://localhost:4000/status
 
 ###
-POST http://localhost:4000/blocks
+POST http://localhost:8080/blocks
 
 ###
 http://localhost:8000/blocks/865c907f23642d80403035f79587638fdeacd73b7c0f29ec78521b836b4ad3a5
 
 ###
-http://localhost:4000/balance/b997f8524e2e89030fa35f33d02dbcab524cb0679bd3fbe1540c1383229e2d2e74cf88b4057fdd7f9ea846bbcbb7fbc64c635ea5d5963f16202743fe8b72de08
+http://localhost:8080/balance/9ac95d6ce2c302ad00c1c938c87b030a84072fd2ae04b13c0fd7b9b45518998623e8e1346db5d157bb8cce4a63a9cdb3ddf961028ad00d920d5a04ba0bb8c439
 
 ###
-http://localhost:6000/balance/3932b8e9d10b9c7990da355304bc24a2d1355ff253e5577b8f30a5bf8fadb6eda122f5ac81fe14f7f8498e5a14171072cabb141f4c06732ab838057875ae1340?total=true
+http://localhost:8080/balance/9ac95d6ce2c302ad00c1c938c87b030a84072fd2ae04b13c0fd7b9b45518998623e8e1346db5d157bb8cce4a63a9cdb3ddf961028ad00d920d5a04ba0bb8c439?total=true
 
 ###
-http://localhost:4000/mempool
+http://localhost:8080/mempool
 
 ###
-http://localhost:3000/wallet
+http://localhost:8080/wallet
 ###
-POST http://localhost:3000/transactions
+POST http://localhost:8080/transactions
 
 {
-    "to": "test",
-    "amount": 10
+    "to": "9ac95d6ce2c302ad00c1c938c87b030a84072fd2ae04b13c0fd7b9b45518998623e8e1346db5d157bb8cce4a63a9cdb3ddf961028ad00d920d5a04ba0bb8c439",
+    "amount": 20
 }
 
 ###
-POST http://localhost:4000/peers
+POST http://localhost:8000/peers
 
 {
     "address": "127.0.0.1",
-    "port": "3000"
+    "port": "8333"
 }
 
 ###

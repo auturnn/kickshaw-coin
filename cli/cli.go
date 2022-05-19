@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/auturnn/kickshaw-coin/explorer"
 	"github.com/auturnn/kickshaw-coin/rest"
 )
 
 func usage() {
 	fmt.Printf("Welcome to kickshaw-coin\n\n")
 	fmt.Printf("Please use the following flags:\n\n")
-	fmt.Printf("-mode  :   Choose between 'html' or 'rest' or 'all'\n")
-	fmt.Printf("-port  :   Set port of the someone server\n")
+	fmt.Printf("-port     : Set port of the someone server\n")
+	fmt.Printf("-id 	  : Input user name\n")
+	fmt.Printf("-password : Input user password")
 	os.Exit(0)
 }
 
@@ -22,20 +22,9 @@ func Start() {
 		usage()
 	}
 
-	mode := flag.String("mode", "rest", "Choose between 'html' or 'rest' or 'all'")
 	port := flag.Int("port", 8333, "Set port of the someone server")
+	// name := flag.String("id", "anonymous", "Input user name")
+	// password := flag.String("password", "0000", "Input user password")
 	flag.Parse()
-
-	switch *mode {
-	case "rest":
-		rest.Start(*port)
-	case "html":
-		explorer.Start(*port)
-	case "all":
-		go explorer.Start(4000)
-		rest.Start(8333)
-	default:
-		usage()
-	}
-
+	rest.Start(*port)
 }
