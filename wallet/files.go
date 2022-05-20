@@ -14,7 +14,7 @@ type fileLayer interface {
 type layer struct{}
 
 func (layer) hasWalletFile() bool {
-	_, err := os.Stat(walletName)
+	_, err := os.Stat(getWalletPath())
 	return !os.IsNotExist(err)
 }
 

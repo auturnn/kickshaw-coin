@@ -87,7 +87,7 @@ func emptyBlocks() {
 }
 
 func getDBName() string {
-	return fmt.Sprintf("%s_%s.db", dbName, os.Args[1][6:])
+	return fmt.Sprintf("%s/%s_%s.db", utils.GetSystemPath(), dbName, os.Args[1][6:])
 }
 
 func Close() {

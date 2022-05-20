@@ -93,7 +93,7 @@ func addrFromKey(key *ecdsa.PrivateKey) string {
 func persistKey(key *ecdsa.PrivateKey) {
 	bytes, err := x509.MarshalECPrivateKey(key)
 	utils.HandleError(err)
-	utils.HandleError(files.writeFile(walletName, bytes, 0644))
+	utils.HandleError(files.writeFile(getWalletPath(), bytes, 0644))
 }
 
 func createPrivKey() *ecdsa.PrivateKey {
@@ -102,8 +102,12 @@ func createPrivKey() *ecdsa.PrivateKey {
 	return prk
 }
 
+func getWalletPath() string {
+	return fmt.Sprintf("%s%s", utils.GetSystemPath(), walletName)
+}
+
 func restoreKey() *ecdsa.PrivateKey {
-	keyAsBytes, err := files.readFile(walletName)
+	keyAsBytes, err := files.readFile(getWalletPath())
 	utils.HandleError(err)
 
 	key, err := x509.ParseECPrivateKey(keyAsBytes)
@@ -129,54 +133,3 @@ func initWallet() *wallet {
 	}
 	return w
 }
-
-// func Start() {
-// 	prkBytes, err := hex.DecodeString(prk) // 16진수 인코딩이 맞는지 확인
-// 	utils.HandleError(err)
-
-// 	restoredKey, err := x509.ParseECPrivateKey(prkBytes)
-// 	utils.HandleError(err)
-
-// 	fmt.Println(restoredKey)
-
-// 	signBytes, err := hex.DecodeString(sign)
-// 	rBytes := signBytes[:len(signBytes)/2]
-// 	sBytes := signBytes[len(signBytes)/2:]
-
-// 	var bigR, bigS = big.Int{}, big.Int{}
-// 	bigR.SetBytes(rBytes)
-// 	bigS.SetBytes(sBytes)
-
-// 	hmsgBytes, err := hex.DecodeString(hmsg)
-// 	utils.HandleError(err)
-
-// 	ok := ecdsa.Verify(&restoredKey.PublicKey, hmsgBytes, &bigR, &bigS)
-// 	fmt.Println(ok)
-// }
-
-// const msg string = "ploy_kickshaw"
-
-// func Start() {
-// 	//ecdsa => Elliptic Curve Digital Signature Algorithem
-// 	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-// 	utils.HandleError(err)
-
-// 	hmsg := utils.Hash(msg)
-// 	fmt.Println(hmsg)
-
-// 	keyAsBytes, err := x509.MarshalECPrivateKey(prk) //parse the key
-// 	utils.HandleError(err)
-// 	fmt.Printf("prk : %x\n", keyAsBytes)
-
-// 	hAsBytes, err := hex.DecodeString(hmsg)
-// 	utils.HandleError(err)
-
-// 	r, s, err := ecdsa.Sign(rand.Reader, prk, hAsBytes)
-// 	utils.HandleError(err)
-
-// 	sign := append(r.Bytes(), s.Bytes()...)
-// 	fmt.Printf("sign: %x\n", sign)
-
-// 	ok := ecdsa.Verify(&prk.PublicKey, hAsBytes, r, s)
-// 	fmt.Println(ok)
-// }

@@ -15,6 +15,7 @@ type Block struct {
 	Difficulty   int    `json:"difficulty"`
 	Nonce        int    `json:"nonce"`
 	Timestamp    int    `json:"timestamp"`
+	Miner        string `json:"Miner"`
 	Transactions []*Tx  `json:"transactions"`
 }
 
@@ -42,6 +43,7 @@ func (b *Block) mine() {
 	target := strings.Repeat("0", b.Difficulty)
 	for {
 		b.Timestamp = int(time.Now().Unix())
+		b.Miner = w.GetAddress()
 		hash := utils.Hash(b)
 		// fmt.Printf("Hash:=%s\nTarget:=%s\nNonce:=%d\n\n", hash, target, b.Nonce)
 		if !strings.HasPrefix(hash, target) {
