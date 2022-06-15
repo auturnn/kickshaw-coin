@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/auturnn/kickshaw-coin/utils"
 	bolt "go.etcd.io/bbolt"
@@ -11,10 +10,10 @@ import (
 var db *bolt.DB
 
 const (
-	dbName       = "kickshaw"
-	dataBucket   = "data"
-	blocksBucket = "blocks"
-	checkpoint   = "checkpoint"
+	dbName       string = "kickshaw"
+	dataBucket   string = "data"
+	blocksBucket string = "blocks"
+	checkpoint   string = "checkpoint"
 )
 
 type DB struct{}
@@ -86,17 +85,17 @@ func emptyBlocks() {
 	})
 }
 
-func getDBName() string {
-	return fmt.Sprintf("%s/%s_%s.db", utils.GetSystemPath(), dbName, os.Args[1][6:])
+func getDBName(port int) string {
+	return fmt.Sprintf("%s/%s_%d.db", utils.GetSystemPath(), dbName, port)
 }
 
 func Close() {
 	db.Close()
 }
 
-func InitDB() {
+func InitDB(port int) {
 	if db == nil {
-		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
+		dbPointer, err := bolt.Open(getDBName(port), 0600, nil)
 		db = dbPointer
 		utils.HandleError(err)
 

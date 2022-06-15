@@ -94,19 +94,24 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "Upgrade to WebSockets",
 		},
+		{
+			URL:         url("/peers"),
+			Method:      "GET",
+			Description: "Get all connecting Peer's address",
+		},
 	}
 	json.NewEncoder(rw).Encode(data)
 }
 
-func blocks(rw http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.BlockChain()))
-	case "POST":
-		newBlock := blockchain.BlockChain().AddBlock()
-		p2p.BroadcastNewBlock(newBlock)
-		rw.WriteHeader(http.StatusCreated)
-	}
+func getBlocks(rw http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.BlockChain()))
+}
+
+func postBlocks(rw http.ResponseWriter, r *http.Request) {
+	newBlock := blockchain.BlockChain().AddBlock()
+	p2p.BroadcastNewBlock(newBlock)
+	rw.WriteHeader(http.StatusCreated)
+	json.NewEncoder(rw).Encode("Add Block!")
 }
 
 func getBlock(rw http.ResponseWriter, r *http.Request) {
@@ -161,34 +166,35 @@ func myWallet(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
 }
 
-func peers(rw http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-		var payload addPeerPayload
-		json.NewDecoder(r.Body).Decode(&payload)
-		p2p.AddPeer(payload.Address, payload.Port, port[1:], true)
-		rw.WriteHeader(http.StatusOK)
-	case "GET":
-		json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
-	}
+func getPeers(rw http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
 }
 
-func Start(aPort int) {
-	port = fmt.Sprintf(":%d", aPort)
+func postPeers(rw http.ResponseWriter, r *http.Request) {
+	var payload addPeerPayload
+	json.NewDecoder(r.Body).Decode(&payload)
+	p2p.AddPeer(payload.Address, payload.Port, port[1:], true)
+	rw.WriteHeader(http.StatusOK)
+}
 
+func Start(cPort int) {
 	router := mux.NewRouter()
-
 	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
+
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", getStatus).Methods("GET")
-	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/blocks", getBlocks).Methods("GET")
+	router.HandleFunc("/blocks", postBlocks).Methods("POST")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", getBlock).Methods("GET")
 	router.HandleFunc("/balance/{address}", getBalance).Methods("GET")
 	router.HandleFunc("/mempool", getMempool).Methods("GET")
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
-	router.HandleFunc("/peers", peers).Methods("GET", "POST")
+	router.HandleFunc("/peers", getPeers).Methods("GET")
+	router.HandleFunc("/peers", postPeers).Methods("POST")
+
+	port = fmt.Sprintf(":%d", cPort)
 	fmt.Printf("Listening http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, handlers.CORS()(router)))
 }

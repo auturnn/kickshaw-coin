@@ -15,7 +15,7 @@ type Block struct {
 	Difficulty   int    `json:"difficulty"`
 	Nonce        int    `json:"nonce"`
 	Timestamp    int    `json:"timestamp"`
-	Miner        string `json:"Miner"`
+	Miner        string `json:"miner"`
 	Transactions []*Tx  `json:"transactions"`
 }
 

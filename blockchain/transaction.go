@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"time"
 
 	"github.com/auturnn/kickshaw-coin/utils"
@@ -15,7 +16,6 @@ const (
 type walletLayer interface {
 	GetAddress() string
 	GetPrivKey() *ecdsa.PrivateKey
-	// InitWallet()
 }
 
 var w walletLayer = wallet.WalletLayer{}
@@ -73,9 +73,11 @@ func validate(tx *Tx) bool {
 	return valid
 }
 
+var ErrNoMoney = errors.New("In Blockchain, you have no money")
+
 func makeTx(from, to string, amount int) (*Tx, error) {
 	if BalanceByAddress(from, BlockChain()) < amount {
-		return nil, utils.ErrorNoMoney
+		return nil, ErrNoMoney
 	}
 
 	var txOuts []*TxOut
@@ -110,7 +112,7 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	tx.sign()
 
 	if !validate(tx) {
-		return nil, utils.ErrorNoMoney
+		return nil, ErrNoMoney
 	}
 
 	return tx, nil

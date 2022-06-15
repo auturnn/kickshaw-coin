@@ -4,12 +4,13 @@ go 1.17
 
 require (
 	github.com/boltdb/bolt v1.3.1
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 )
 
 require (
-	github.com/felixge/httpsnoop v1.0.1 // indirect
-	github.com/gorilla/handlers v1.5.1 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 )
 
 require (
@@ -44,7 +45,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
-	golang.org/x/sys v0.0.0-20220513210249-45d2b4557a2a // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/tools v0.1.8 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
