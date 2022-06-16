@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.18
+  build:
+    commands:
+      - export KICKSHAW_PORT=8080
+      - echo Building the Go code...
+      - cd $CODEBUILD_SRC_DIR/kickshaw-coin
+      - go build
+artifacts:
+  base-directory: kickshaw-coin
+  files:
+    - kickshaw-coin
