@@ -7,7 +7,7 @@ phases:
   build:
     commands:
       - echo Building the Go code...
-      - cd $CODEBUILD_SRC_DIR/kickshaw-coin
+      - cd $CODEBUILD_SRC_DIR
       - go build
 artifacts:
   base-directory: kickshaw-coin
