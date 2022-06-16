@@ -10,6 +10,5 @@ phases:
       - cd $CODEBUILD_SRC_DIR
       - go build
 artifacts:
-  base-directory: kickshaw-coin
   files:
     - kickshaw-coin
