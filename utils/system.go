@@ -16,7 +16,7 @@ func hasAppDir() bool {
 }
 
 func mkdir() error {
-	return os.Mkdir(GetSystemPath(), 0644)
+	return os.Mkdir(GetSystemPath(), 0744)
 }
 
 func HasSystemPath() {
