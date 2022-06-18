@@ -11,4 +11,10 @@ phases:
       - go build
 artifacts:
   files:
+    - appspec.yml
     - kickshaw-coin
+  discard-paths: yes
+
+cache:
+  paths:
+    - "/root/.gradle/caches/**/*"
