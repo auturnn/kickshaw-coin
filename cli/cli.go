@@ -2,9 +2,6 @@ package cli
 
 import (
 	"flag"
-	"log"
-	"os"
-	"strconv"
 
 	"github.com/auturnn/kickshaw-coin/db"
 	"github.com/auturnn/kickshaw-coin/rest"
@@ -20,14 +17,8 @@ import (
 func Start() {
 	defer db.Close()
 
-	envPort, err := strconv.Atoi(os.Getenv("KICKSHAW_PORT"))
-	if err != nil{
-		log.Fatal("port environment has not setting")
-		return
-	}
-	
 	//하나의 컴퓨터에서 여러 테스트를 위해 적용됨
-	port := flag.Int("port", envPort, "Set port of the someone server")
+	port := flag.Int("port", 80, "Set port of the someone server")
 
 	flag.Parse()
 
