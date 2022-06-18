@@ -13,6 +13,7 @@ artifacts:
   files:
     - appspec.yml
     - kickshaw-coin
+    - scripts/**
   discard-paths: yes
 
 cache:
