@@ -12,6 +12,6 @@ permissions:
 
 hooks:
   ApplicationStart:
-    - loacation: script/serverStart.sh
+    - location: serverStart.sh
       timeout: 60
       runas: root
