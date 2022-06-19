@@ -1,4 +1,28 @@
 #!/bin/bash
-echo "> server start"
-#80번 포트 사용을 위해 root로 진행
-nohup sudo /home/ec2-user/build/kickshaw-coin > /dev/null 2> /dev/null < /dev/null &
+
+
+echo "> create service"
+
+cat <<EOF> /etc/systemd/system/kickshaw-coin.service
+[Unit]
+Description=kickshaw-coin Server
+After=syslog.target
+
+[Service]
+User=ec2-user
+Group=ec2-user
+
+ExecStart=/home/ec2-user/build/kickshaw-coin -port=8080
+WorkingDirectory=/home/ec2-user/build
+
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "> start service(daemon)"
+
+systemctl daemon-reload
+systemctl restart kickshaw-coin
