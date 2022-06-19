@@ -11,10 +11,6 @@ permissions:
     group: ec2-user
 
 hooks:
-  AfterInstall:
-    - location: daemon.sh
-      timeout: 60
-      runas: root
   ApplicationStart:
     - location: serverStart.sh
       timeout: 60
