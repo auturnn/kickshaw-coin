@@ -3,6 +3,12 @@ package rest
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"runtime"
+	"time"
+
+	"github.com/auturnn/kickshaw-coin/utils"
+	"github.com/gorilla/handlers"
 )
 
 func jsonContentTypeMiddleware(next http.Handler) http.Handler {
@@ -13,9 +19,26 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+const windowLogName = "2006_01_02"
+const defaultLogName = "2006-01-02"
+
 func loggerMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.RequestURI)
-		next.ServeHTTP(rw, r)
-	})
+	var f *os.File
+	t := time.Now().Local()
+
+	switch runtime.GOOS {
+	case "windows":
+		f = loggingFileOpen(t.Format(windowLogName))
+	default:
+		f = loggingFileOpen(t.Format(defaultLogName))
+	}
+
+	return handlers.LoggingHandler(f, next)
+}
+
+func loggingFileOpen(fileName string) *os.File {
+	f, err := os.OpenFile(fmt.Sprintf("./log/%s.log", fileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0655)
+	utils.HandleError(err)
+
+	return f
 }

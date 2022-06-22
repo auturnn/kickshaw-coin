@@ -1,3 +1,7 @@
 ./explorer
-
+./log
 cover.out
+*.wallet
+*.db
+*.log
+*.http

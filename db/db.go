@@ -60,7 +60,6 @@ func loadChain() []byte {
 }
 
 func saveBlock(hash string, data []byte) {
-	fmt.Printf("Saving Block: %s \n", hash)
 	err := db.Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(blocksBucket))
 		return bucket.Put([]byte(hash), data)
@@ -86,7 +85,7 @@ func emptyBlocks() {
 }
 
 func getDBName(port int) string {
-	return fmt.Sprintf("%s/%s_%d.db", utils.GetSystemPath(), dbName, port)
+	return fmt.Sprintf("./%s_%d.db", dbName, port)
 }
 
 func Close() {

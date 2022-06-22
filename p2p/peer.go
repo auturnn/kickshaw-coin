@@ -20,6 +20,7 @@ type peer struct {
 	key   string
 	addr  string
 	port  string
+	wAddr string
 	conn  *websocket.Conn
 	inbox chan []byte
 }
@@ -67,15 +68,15 @@ func (p *peer) write() {
 	}
 }
 
-func initPeer(conn *websocket.Conn, addr, port string) *peer {
+func initPeer(conn *websocket.Conn, addr, port, wAddr string) *peer {
 	Peers.m.Lock()
 	defer Peers.m.Unlock()
-
-	key := fmt.Sprintf("%s:%s", addr, port)
+	key := fmt.Sprintf("%s:%s:%s", addr, port, wAddr)
 	p := &peer{
 		addr:  addr,
 		port:  port,
 		key:   key,
+		wAddr: wAddr,
 		conn:  conn,
 		inbox: make(chan []byte),
 	}

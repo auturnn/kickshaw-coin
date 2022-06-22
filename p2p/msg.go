@@ -3,6 +3,7 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
@@ -34,8 +35,9 @@ func makeMessage(kind MessageKind, payload interface{}) []byte {
 }
 
 func sendNewestBlock(p *peer) {
-	fmt.Printf("Sending newest block to %s\n", p.key)
+	log.Printf("Sending newest block to %s\n", p.key)
 	b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
+	log.Println("sendNewest Block", b)
 	utils.HandleError(err)
 	m := makeMessage(MessageNewestBlock, b)
 	p.inbox <- m
@@ -69,15 +71,13 @@ func notifyNewPeer(addr string, p *peer) {
 func handlerMsg(m *Message, p *peer) {
 	switch m.Kind {
 	case MessageNewestBlock:
-
-		fmt.Printf("Received the newst block from %s\n", p.key)
+		fmt.Printf("Received the newest block from %s\n", p.key)
 		var payload blockchain.Block
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
-
-		b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
+		block, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
 		utils.HandleError(err)
 
-		if payload.Height >= b.Height {
+		if payload.Height >= block.Height {
 			fmt.Printf("Requesting all blocks from %s\n", p.key)
 			requestAllBlocks(p)
 		} else {
@@ -85,7 +85,7 @@ func handlerMsg(m *Message, p *peer) {
 		}
 
 	case MessageAllBlocksrequest:
-		fmt.Printf("%s wants all the blocks\n", p.key)
+		fmt.Printf("%s wants all the blocks.\n", p.key)
 		sendAllBlocks(p)
 
 	case MessageAllBlocksResponse:
@@ -95,13 +95,11 @@ func handlerMsg(m *Message, p *peer) {
 		blockchain.BlockChain().Replace(payload)
 
 	case MessageNewBlockNotify:
-		fmt.Printf("New Blocks Notify~ for %s\n", p.key)
 		var payload *blockchain.Block
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		blockchain.BlockChain().AddPeerBlock(payload)
 
 	case MessageNewTxNotify:
-		fmt.Printf("New Transaction Notify~")
 		var payload *blockchain.Tx
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		blockchain.Mempool().AddPeerTx(payload)
@@ -109,9 +107,8 @@ func handlerMsg(m *Message, p *peer) {
 	case MessageNewPeerNotify:
 		var payload string
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
-		fmt.Printf("I will now /ws upgrade %s", payload)
+		log.Println("NewPeerNotify!!", payload)
 		parts := strings.Split(payload, ":")
-		fmt.Println(parts)
-		AddPeer(parts[0], parts[1], parts[2], false)
+		AddPeer(parts[0], parts[1], parts[3], parts[2], false)
 	}
 }

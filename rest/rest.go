@@ -111,7 +111,6 @@ func postBlocks(rw http.ResponseWriter, r *http.Request) {
 	newBlock := blockchain.BlockChain().AddBlock()
 	p2p.BroadcastNewBlock(newBlock)
 	rw.WriteHeader(http.StatusCreated)
-	json.NewEncoder(rw).Encode("Add Block!")
 }
 
 func getBlock(rw http.ResponseWriter, r *http.Request) {
@@ -170,17 +169,21 @@ func getPeers(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
 }
 
+//AddPeer의 구조상 문제가 발생. 해결요망!
 func postPeers(rw http.ResponseWriter, r *http.Request) {
 	var payload addPeerPayload
 	json.NewDecoder(r.Body).Decode(&payload)
-	p2p.AddPeer(payload.Address, payload.Port, port[1:], true)
+
+	w := wallet.WalletLayer{}
+	p2p.AddPeer(payload.Address, payload.Port, port[1:], w.GetAddress()[:5], true)
 	rw.WriteHeader(http.StatusOK)
 }
 
+//wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
+//그렇기때문에 로그인기능같은 본인인증이 필요함
 func Start(cPort int) {
 	router := mux.NewRouter()
 	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
-
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", getStatus).Methods("GET")
 	router.HandleFunc("/blocks", getBlocks).Methods("GET")
@@ -195,6 +198,8 @@ func Start(cPort int) {
 	router.HandleFunc("/peers", postPeers).Methods("POST")
 
 	port = fmt.Sprintf(":%d", cPort)
-	fmt.Printf("Listening http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, handlers.CORS()(router)))
+	log.Printf("Listening http://localhost%s\n", port)
+	cors := handlers.CORS()(router)
+	// recovery := handlers.RecoveryHandler()(cors)
+	log.Fatal(http.ListenAndServe(port, cors))
 }

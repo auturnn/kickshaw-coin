@@ -151,7 +151,8 @@ func Blocks(bc *blockchain) (blocks []*Block) {
 	defer bc.m.Unlock()
 	hashCursor := bc.NewestHash
 	for {
-		block, _ := FindBlock(hashCursor)
+		block, err := FindBlock(hashCursor)
+		utils.HandleError(err)
 		blocks = append(blocks, block)
 		if block.PrevHash != "" {
 			hashCursor = block.PrevHash

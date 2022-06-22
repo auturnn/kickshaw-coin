@@ -31,6 +31,7 @@ var ErrNotFound = errors.New("block not found")
 
 func FindBlock(hash string) (*Block, error) {
 	blockBytes := dbStorage.FindBlock(hash)
+
 	if blockBytes == nil {
 		return nil, ErrNotFound
 	}

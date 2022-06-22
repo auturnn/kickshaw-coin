@@ -18,8 +18,7 @@ func Start() {
 	defer db.Close()
 
 	//하나의 컴퓨터에서 여러 테스트를 위해 적용됨
-	port := flag.Int("port", 80, "Set port of the someone server")
-
+	port := flag.Int("p", 80, "Set port of the someone server")
 	flag.Parse()
 
 	db.InitDB(*port)
