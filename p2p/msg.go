@@ -37,7 +37,6 @@ func makeMessage(kind MessageKind, payload interface{}) []byte {
 func sendNewestBlock(p *peer) {
 	log.Printf("Sending newest block to %s\n", p.key)
 	b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
-	log.Println("sendNewest Block", b)
 	utils.HandleError(err)
 	m := makeMessage(MessageNewestBlock, b)
 	p.inbox <- m
@@ -106,9 +105,10 @@ func handlerMsg(m *Message, p *peer) {
 
 	case MessageNewPeerNotify:
 		var payload string
+		// {연결해오는peerAddr : 연결해오는peerPort : 연결해오는peerWallet}
+		// :{연결되있는peerAddr: 연결되있는peerPort : 연결되있는peerWallet}
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
-		log.Println("NewPeerNotify!!", payload)
 		parts := strings.Split(payload, ":")
-		AddPeer(parts[0], parts[1], parts[3], parts[2], false)
+		AddPeer(parts[0], parts[1], parts[2], parts[3], parts[4], false)
 	}
 }

@@ -19,8 +19,9 @@ func Start() {
 
 	//하나의 컴퓨터에서 여러 테스트를 위해 적용됨
 	port := flag.Int("p", 80, "Set port of the someone server")
+	status := flag.Bool("n", true, `Set application status in [network, solo]`)
 	flag.Parse()
 
 	db.InitDB(*port)
-	rest.Start(*port)
+	rest.Start(*port, *status)
 }

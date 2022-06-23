@@ -1,9 +1,11 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/gorilla/websocket"
 )
 
@@ -17,12 +19,13 @@ var Peers peers = peers{
 }
 
 type peer struct {
-	key   string
-	addr  string
-	port  string
-	wAddr string
-	conn  *websocket.Conn
-	inbox chan []byte
+	key    string
+	addr   string
+	port   string
+	wAddr  string
+	server bool
+	conn   *websocket.Conn
+	inbox  chan []byte
 }
 
 func AllPeers(p *peers) []string {
@@ -41,7 +44,24 @@ func (p *peer) close() {
 	Peers.m.Lock()
 	defer Peers.m.Unlock()
 	p.conn.Close()
+
 	delete(Peers.v, p.key)
+	if p.server {
+		ServerCheck()
+	}
+}
+
+func ServerCheck() {
+	cnt := 0
+	for _, p := range Peers.v {
+		if p.server {
+			cnt++
+		}
+	}
+
+	if cnt == 0 {
+		utils.HandleError(errors.New("all super node is not running on kickshaw-coin blockchain network"))
+	}
 }
 
 func (p *peer) read() {
@@ -68,17 +88,18 @@ func (p *peer) write() {
 	}
 }
 
-func initPeer(conn *websocket.Conn, addr, port, wAddr string) *peer {
+func initPeer(conn *websocket.Conn, addr, port, wAddr string, server bool) *peer {
 	Peers.m.Lock()
 	defer Peers.m.Unlock()
 	key := fmt.Sprintf("%s:%s:%s", addr, port, wAddr)
 	p := &peer{
-		addr:  addr,
-		port:  port,
-		key:   key,
-		wAddr: wAddr,
-		conn:  conn,
-		inbox: make(chan []byte),
+		addr:   addr,
+		port:   port,
+		key:    key,
+		wAddr:  wAddr,
+		conn:   conn,
+		server: server,
+		inbox:  make(chan []byte),
 	}
 
 	go p.read()

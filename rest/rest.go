@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -169,19 +170,26 @@ func getPeers(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
 }
 
-//AddPeer의 구조상 문제가 발생. 해결요망!
-func postPeers(rw http.ResponseWriter, r *http.Request) {
-	var payload addPeerPayload
-	json.NewDecoder(r.Body).Decode(&payload)
+func p2pServerConnect() {
+	res, err := http.Get("http://localhost:8080/wallet")
+	if err != nil {
+		utils.HandleError(errors.New("server is down"))
+	}
 
-	w := wallet.WalletLayer{}
-	p2p.AddPeer(payload.Address, payload.Port, port[1:], w.GetAddress()[:5], true)
-	rw.WriteHeader(http.StatusOK)
+	var walletPayload struct {
+		Address string `json:"address"`
+	}
+	json.NewDecoder(res.Body).Decode(&walletPayload)
+
+	log.Println("p2p network Connecting...")
+	p2p.AddPeer("127.0.0.1", "8080", walletPayload.Address[:5], port[1:], wallet.WalletLayer{}.GetAddress()[:5], true)
 }
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
 //그렇기때문에 로그인기능같은 본인인증이 필요함
-func Start(cPort int) {
+func Start(cliPort int, status bool) {
+	port = fmt.Sprintf(":%d", cliPort)
+
 	router := mux.NewRouter()
 	router.Use(jsonContentTypeMiddleware, loggerMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
@@ -193,13 +201,17 @@ func Start(cPort int) {
 	router.HandleFunc("/mempool", getMempool).Methods("GET")
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
-	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
-	router.HandleFunc("/peers", getPeers).Methods("GET")
-	router.HandleFunc("/peers", postPeers).Methods("POST")
 
-	port = fmt.Sprintf(":%d", cPort)
-	log.Printf("Listening http://localhost%s\n", port)
+	//network 연결 모드일때만 활성화 // 사용법 = cli/cli.go
+	if status {
+		router.HandleFunc("/peers", getPeers).Methods("GET")
+		router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
+		p2pServerConnect()
+	}
+
 	cors := handlers.CORS()(router)
-	// recovery := handlers.RecoveryHandler()(cors)
+
+	log.Printf("Listening http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, cors))
+
 }
