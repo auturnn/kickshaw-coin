@@ -8,8 +8,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"os"
-	"strings"
 
 	"github.com/auturnn/kickshaw-coin/utils"
 )
@@ -106,7 +104,7 @@ func createPrivKey() *ecdsa.PrivateKey {
 }
 
 func getWalletPath() string {
-	return fmt.Sprintf("./%s_%s%s", walletName, strings.Split(os.Args[1], "=")[1], walletExtentsion)
+	return fmt.Sprintf("./%s%s", walletName, walletExtentsion)
 }
 
 func restoreKey() *ecdsa.PrivateKey {
