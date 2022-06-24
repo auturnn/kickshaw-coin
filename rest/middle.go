@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,7 +38,14 @@ func loggerMiddleware(next http.Handler) http.Handler {
 }
 
 func loggingFileOpen(fileName string) *os.File {
-	f, err := os.OpenFile(fmt.Sprintf("./log/%s.log", fileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0655)
+	logPath := "./log"
+	if _, err := os.Stat(logPath); err != nil {
+		if err := os.Mkdir(logPath, 0755); err != nil {
+			utils.HandleError(errors.New("failed logging path create"))
+		}
+	}
+
+	f, err := os.OpenFile(fmt.Sprintf("%s/%s.log", logPath, fileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0655)
 	utils.HandleError(err)
 
 	return f

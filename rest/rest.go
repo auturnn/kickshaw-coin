@@ -171,7 +171,7 @@ func getPeers(rw http.ResponseWriter, r *http.Request) {
 }
 
 func p2pServerConnect() {
-	res, err := http.Get("http://localhost:8080/wallet")
+	res, err := http.Get("http://3.34.98.184:8080/wallet")
 	if err != nil {
 		utils.HandleError(errors.New("server is down"))
 	}
@@ -182,7 +182,7 @@ func p2pServerConnect() {
 	json.NewDecoder(res.Body).Decode(&walletPayload)
 
 	log.Println("p2p network Connecting...")
-	p2p.AddPeer("127.0.0.1", "8080", walletPayload.Address[:5], port[1:], wallet.WalletLayer{}.GetAddress()[:5], true)
+	p2p.AddPeer("3.34.98.184", "8080", walletPayload.Address[:5], port[1:], wallet.WalletLayer{}.GetAddress()[:5], true)
 }
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
