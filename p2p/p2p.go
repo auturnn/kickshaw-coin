@@ -38,7 +38,7 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 
 func AddPeer(newPeerAddr, newPeerPort, newPeerWAddr, existPeerPort, existPeerWAddr string, server bool) {
 	log.Printf("%s:%s:%s wants to connect to port %s:%s\n", newPeerAddr, newPeerPort, newPeerWAddr, existPeerPort, existPeerWAddr)
-	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("ws://%s:%s/ws?nwddr=%s&port=%s&wddr=%s&server=%t", newPeerAddr, newPeerPort, newPeerWAddr, existPeerPort, existPeerWAddr, server), nil)
+	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("ws://%s:%s/ws?nwddr=%s&port=%s&wddr=%s", newPeerAddr, newPeerPort, newPeerWAddr, existPeerPort, existPeerWAddr), nil)
 	utils.HandleError(err)
 	p := initPeer(conn, newPeerAddr, newPeerPort, newPeerWAddr, server)
 	sendNewestBlock(p)

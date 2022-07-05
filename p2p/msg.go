@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
@@ -76,6 +77,10 @@ func handlerMsg(m *Message, p *peer) {
 		block, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
 		utils.HandleError(err)
 
+		if payload.Hash == block.Hash && payload.Height == block.Height {
+			return
+		}
+
 		if payload.Height >= block.Height {
 			fmt.Printf("Requesting all blocks from %s\n", p.key)
 			requestAllBlocks(p)
@@ -109,6 +114,7 @@ func handlerMsg(m *Message, p *peer) {
 		// :{연결되있는peerAddr: 연결되있는peerPort : 연결되있는peerWallet}
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		parts := strings.Split(payload, ":")
-		AddPeer(parts[0], parts[1], parts[2], parts[3], parts[4], false)
+		server, _ := strconv.ParseBool(parts[5])
+		AddPeer(parts[0], parts[1], parts[2], parts[3], parts[4], server)
 	}
 }

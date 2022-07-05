@@ -5,6 +5,8 @@ import (
 
 	"github.com/auturnn/kickshaw-coin/db"
 	"github.com/auturnn/kickshaw-coin/rest"
+	"github.com/auturnn/kickshaw-coin/utils"
+	"github.com/phayes/freeport"
 )
 
 // func usage() {
@@ -23,11 +25,12 @@ func Start() {
 	// if err != nil{
 	// 	utils.HandleError(errors.New("failed get port"))
 	// }
+	randomPort, err := freeport.GetFreePort()
+	utils.HandleError(err)
 
-	port := flag.Int("port", 8080, "Set port of the someone server")
+	port := flag.Int("port", randomPort, "Set port of the someone server")
 	status := flag.Bool("network", true, `Set application status in [network, solo]`)
 	flag.Parse()
-
 	db.InitDB()
 	rest.Start(*port, *status)
 }
