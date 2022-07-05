@@ -2,13 +2,12 @@ package p2p
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
 	"github.com/auturnn/kickshaw-coin/utils"
+	log "github.com/kataras/golog"
 )
 
 type MessageKind int
@@ -36,7 +35,7 @@ func makeMessage(kind MessageKind, payload interface{}) []byte {
 }
 
 func sendNewestBlock(p *peer) {
-	log.Printf("Sending newest block to %s\n", p.key)
+	logf(log.InfoLevel, "Peer %s - Sending newest block", p.key)
 	b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
 	utils.HandleError(err)
 	m := makeMessage(MessageNewestBlock, b)
@@ -71,7 +70,7 @@ func notifyNewPeer(addr string, p *peer) {
 func handlerMsg(m *Message, p *peer) {
 	switch m.Kind {
 	case MessageNewestBlock:
-		fmt.Printf("Received the newest block from %s\n", p.key)
+		logf(log.InfoLevel, "Peer %s - Received the newest block", p.key)
 		var payload blockchain.Block
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		block, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
@@ -82,18 +81,18 @@ func handlerMsg(m *Message, p *peer) {
 		}
 
 		if payload.Height >= block.Height {
-			fmt.Printf("Requesting all blocks from %s\n", p.key)
+			logf(log.InfoLevel, "Peer %s - Requesting all blocks", p.key)
 			requestAllBlocks(p)
 		} else {
 			sendNewestBlock(p)
 		}
 
 	case MessageAllBlocksrequest:
-		fmt.Printf("%s wants all the blocks.\n", p.key)
+		logf(log.InfoLevel, "Peer %s - wants all the blocks", p.key)
 		sendAllBlocks(p)
 
 	case MessageAllBlocksResponse:
-		fmt.Printf("Received all the blocks from %s\n", p.key)
+		logf(log.InfoLevel, "Peer %s - Received all the blocks", p.key)
 		var payload []*blockchain.Block
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		blockchain.BlockChain().Replace(payload)
@@ -113,6 +112,7 @@ func handlerMsg(m *Message, p *peer) {
 		// {연결해오는peerAddr : 연결해오는peerPort : 연결해오는peerWallet}
 		// :{연결되있는peerAddr: 연결되있는peerPort : 연결되있는peerWallet}
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		logf(log.InfoLevel, "%s", payload)
 		parts := strings.Split(payload, ":")
 		server, _ := strconv.ParseBool(parts[5])
 		AddPeer(parts[0], parts[1], parts[2], parts[3], parts[4], server)

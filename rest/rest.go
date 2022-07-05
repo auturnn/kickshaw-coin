@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/auturnn/kickshaw-coin/wallet"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/kataras/golog"
+	log "github.com/kataras/golog"
 )
 
 var port string
@@ -182,7 +183,7 @@ func p2pServerConnect() {
 	}
 	json.NewDecoder(res.Body).Decode(&walletPayload)
 
-	log.Println("p2p network Connecting...")
+	log.Logf(log.InfoLevel, "p2p network Connecting...")
 	p2p.AddPeer("3.34.98.184", "8080", walletPayload.Address[:5], port[1:], wallet.WalletLayer{}.GetAddress()[:5], true)
 }
 
@@ -212,8 +213,6 @@ func Start(p int, status bool) {
 	}
 
 	cors := handlers.CORS()(router)
-
-	log.Printf("Listening http://localhost%s\n", port)
+	log.Logf(golog.InfoLevel, "Listening http://localhost%s", port)
 	log.Fatal(http.ListenAndServe(port, cors))
-
 }

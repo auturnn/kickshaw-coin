@@ -13,7 +13,6 @@ import (
 )
 
 func jsonContentTypeMiddleware(next http.Handler) http.Handler {
-	//adaptor pattern
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-type", "application/json")
 		next.ServeHTTP(rw, r)
@@ -34,7 +33,8 @@ func loggerMiddleware(next http.Handler) http.Handler {
 		f = loggingFileOpen(t.Format(defaultLogName))
 	}
 
-	return handlers.LoggingHandler(f, next)
+	h := handlers.LoggingHandler(os.Stdout, next)
+	return handlers.LoggingHandler(f, h)
 }
 
 func loggingFileOpen(fileName string) *os.File {
