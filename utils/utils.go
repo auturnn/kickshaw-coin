@@ -10,17 +10,22 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/kataras/golog"
+	"log"
+
+	"github.com/kataras/golog"
 )
 
 //unit test시에도 내용을 변경하여 정상운용 가능하도록 설정
-var logPn = log.Logf
+var logPn = log.Panic
 
-//HandleError error 변수를 받아 nil이 아닐경우 log.Panic(err)을 발생시킨다.
-func HandleError(err error) {
+//HandleError error 변수를 받아 nil이 아닐경우 앱내에서 정의된 에러인지 확인후 상황에 따른 처리를 담당
+func HandleError(err, definedErr error) {
 	if err != nil {
-		logPn(log.ErrorLevel, "%s", err)
-		log.Fatal()
+		if definedErr != nil {
+			golog.Fatal(definedErr)
+		} else {
+			golog.Fatal(err)
+		}
 	}
 }
 
@@ -38,14 +43,14 @@ func Splitter(s string, sep string, i int) string {
 func ToBytes(i interface{}) []byte {
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
-	HandleError(encoder.Encode(i))
+	HandleError(encoder.Encode(i), nil)
 	return buf.Bytes()
 }
 
 //FromBytes interface와 byte로 이루어진 data를 가져와서 data를 encode하고 interface에 전달한다.
 func FromBytes(i interface{}, data []byte) {
 	decoder := gob.NewDecoder(bytes.NewReader(data))
-	HandleError(decoder.Decode(i))
+	HandleError(decoder.Decode(i), nil)
 }
 
 //Hash takes an interface and returns the hex encoding of the hash.
@@ -59,6 +64,6 @@ func Hash(i interface{}) string {
 //ToJSON interface를 받아 json으로 Marshal하여 byte로 반환한다.
 func ToJSON(i interface{}) []byte {
 	r, err := json.Marshal(i)
-	HandleError(err)
+	HandleError(err, nil)
 	return r
 }

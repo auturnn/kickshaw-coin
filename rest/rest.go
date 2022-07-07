@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -118,12 +117,12 @@ func postBlocks(rw http.ResponseWriter, r *http.Request) {
 
 func getBlock(rw http.ResponseWriter, r *http.Request) {
 	hash := mux.Vars(r)["hash"]
-	block, err := blockchain.FindBlock(hash)
+	block, definedErr := blockchain.FindBlock(hash)
 	encoder := json.NewEncoder(rw)
-	if err == blockchain.ErrNotFound {
-		utils.HandleError(encoder.Encode(errorResponse{fmt.Sprint(err)}))
+	if definedErr == blockchain.ErrNotFound {
+		utils.HandleError(encoder.Encode(errorResponse{fmt.Sprint(definedErr)}), definedErr)
 	} else {
-		utils.HandleError(encoder.Encode(block))
+		utils.HandleError(encoder.Encode(block), nil)
 	}
 }
 
@@ -137,19 +136,19 @@ func getBalance(rw http.ResponseWriter, r *http.Request) {
 	switch total {
 	case "true":
 		amount := blockchain.BalanceByAddress(address, blockchain.BlockChain())
-		utils.HandleError(json.NewEncoder(rw).Encode(balanceResponse{address, amount}))
+		utils.HandleError(json.NewEncoder(rw).Encode(balanceResponse{address, amount}), nil)
 	default:
-		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.UTxOutsByAddress(address, blockchain.BlockChain())))
+		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.UTxOutsByAddress(address, blockchain.BlockChain())), nil)
 	}
 }
 
 func getMempool(rw http.ResponseWriter, r *http.Request) {
-	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool().Txs))
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool().Txs), nil)
 }
 
 func transactions(rw http.ResponseWriter, r *http.Request) {
 	var payload addTxPayload
-	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload))
+	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload), nil)
 
 	tx, err := blockchain.Mempool().AddTx(payload.To, payload.Amount)
 	if err != nil {
@@ -176,9 +175,7 @@ func p2pServerConnect() {
 	serverInfo := map[string]string{"ver": "http", "address": "127.0.0.1", "port": "8080"}
 	serverURL := fmt.Sprintf("%s://%s:%s", serverInfo["ver"], serverInfo["address"], serverInfo["port"])
 	res, err := http.Get(serverURL + "/wallet")
-	if err != nil {
-		utils.HandleError(errors.New("server is down"))
-	}
+	utils.HandleError(err, utils.ErrNetworkIsNotWork)
 
 	var walletPayload struct {
 		Address string `json:"address"`

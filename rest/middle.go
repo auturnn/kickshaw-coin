@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -41,12 +40,12 @@ func loggingFileOpen(fileName string) *os.File {
 	logPath := "./log"
 	if _, err := os.Stat(logPath); err != nil {
 		if err := os.Mkdir(logPath, 0755); err != nil {
-			utils.HandleError(errors.New("failed logging path create"))
+			utils.HandleError(err, utils.ErrLogPath)
 		}
 	}
 
 	f, err := os.OpenFile(fmt.Sprintf("%s/%s.log", logPath, fileName), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0655)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	return f
 }

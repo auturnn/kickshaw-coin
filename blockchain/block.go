@@ -33,7 +33,7 @@ func FindBlock(hash string) (*Block, error) {
 	blockBytes := dbStorage.FindBlock(hash)
 
 	if blockBytes == nil {
-		return nil, ErrNotFound
+		return nil, utils.ErrTargetBlockNotFound
 	}
 	block := &Block{}
 	block.restore(blockBytes)

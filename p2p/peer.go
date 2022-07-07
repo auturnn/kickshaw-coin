@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -60,7 +59,7 @@ func ServerCheck() {
 	}
 
 	if cnt == 0 {
-		utils.HandleError(errors.New("all super node is not running on kickshaw-coin blockchain network"))
+		utils.HandleError(utils.ErrNetworkIsNotWork, nil)
 	}
 }
 

@@ -52,24 +52,24 @@ func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
 
 func decodeString(payload string) []byte {
 	bytes, err := hex.DecodeString(payload)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 	return bytes
 }
 
 func Sign(payload string, prk *ecdsa.PrivateKey) string {
 	payloadBytes := decodeString(payload)
 	r, s, err := ecdsa.Sign(rand.Reader, prk, payloadBytes)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	return encodeBigInts(r.Bytes(), s.Bytes())
 }
 
 func Verify(sign, payload, addr string) bool {
 	r, s, err := restoreBigInts(sign)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	x, y, err := restoreBigInts(addr)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	//not used privateKey
 	puK := ecdsa.PublicKey{
@@ -93,13 +93,13 @@ func addrFromKey(key *ecdsa.PrivateKey) string {
 
 func persistKey(key *ecdsa.PrivateKey) {
 	bytes, err := x509.MarshalECPrivateKey(key)
-	utils.HandleError(err)
-	utils.HandleError(files.writeFile(getWalletPath(), bytes, 0644))
+	utils.HandleError(err, nil)
+	utils.HandleError(files.writeFile(getWalletPath(), bytes, 0644), nil)
 }
 
 func createPrivKey() *ecdsa.PrivateKey {
 	prk, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 	return prk
 }
 
@@ -109,10 +109,10 @@ func getWalletPath() string {
 
 func restoreKey() *ecdsa.PrivateKey {
 	keyAsBytes, err := files.readFile(getWalletPath())
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	key, err := x509.ParseECPrivateKey(keyAsBytes)
-	utils.HandleError(err)
+	utils.HandleError(err, nil)
 
 	return key
 }

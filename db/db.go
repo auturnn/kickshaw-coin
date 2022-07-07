@@ -64,7 +64,7 @@ func saveBlock(hash string, data []byte) {
 		bucket := t.Bucket([]byte(blocksBucket))
 		return bucket.Put([]byte(hash), data)
 	})
-	utils.HandleError(err)
+	utils.HandleError(err, utils.ErrSaveBlock)
 }
 
 func saveChain(data []byte) {
@@ -72,14 +72,16 @@ func saveChain(data []byte) {
 		bucket := t.Bucket([]byte(dataBucket))
 		return bucket.Put([]byte(checkpoint), data)
 	})
-	utils.HandleError(err)
+	utils.HandleError(err, utils.ErrSaveChain)
 }
 
 func emptyBlocks() {
 	db.Update(func(t *bolt.Tx) error {
-		utils.HandleError(t.DeleteBucket([]byte(blocksBucket)))
-		_, err := t.CreateBucket([]byte(blocksBucket))
-		utils.HandleError(err)
+		err := t.DeleteBucket([]byte(blocksBucket))
+		utils.HandleError(err, utils.ErrReplaceBlockchain)
+
+		_, err = t.CreateBucket([]byte(blocksBucket))
+		utils.HandleError(err, utils.ErrCreateDB)
 		return nil
 	})
 }
@@ -96,15 +98,15 @@ func InitDB() {
 	if db == nil {
 		dbPointer, err := bolt.Open(getDBName(), 0600, nil)
 		db = dbPointer
-		utils.HandleError(err)
+		utils.HandleError(err, utils.ErrLoadDB)
 
 		err = db.Update(func(t *bolt.Tx) error {
 			_, err = t.CreateBucketIfNotExists([]byte(blocksBucket))
-			utils.HandleError(err)
+			utils.HandleError(err, utils.ErrCreateBlockChain)
 
 			_, err = t.CreateBucketIfNotExists([]byte(dataBucket))
 			return err
 		})
-		utils.HandleError(err)
+		utils.HandleError(err, utils.ErrLoadDB)
 	}
 }

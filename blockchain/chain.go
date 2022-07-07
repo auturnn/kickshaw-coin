@@ -152,7 +152,8 @@ func Blocks(bc *blockchain) (blocks []*Block) {
 	hashCursor := bc.NewestHash
 	for {
 		block, err := FindBlock(hashCursor)
-		utils.HandleError(err)
+		utils.HandleError(err, utils.ErrTargetBlockNotFound)
+
 		blocks = append(blocks, block)
 		if block.PrevHash != "" {
 			hashCursor = block.PrevHash
@@ -180,7 +181,7 @@ func Status(bc *blockchain, rw http.ResponseWriter) {
 	bc.m.Lock()
 	defer bc.m.Unlock()
 
-	utils.HandleError(json.NewEncoder(rw).Encode(bc))
+	utils.HandleError(json.NewEncoder(rw).Encode(bc), nil)
 }
 
 func (bc *blockchain) AddPeerBlock(newBlock *Block) {

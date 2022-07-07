@@ -36,8 +36,8 @@ func makeMessage(kind MessageKind, payload interface{}) []byte {
 
 func sendNewestBlock(p *peer) {
 	logf(log.InfoLevel, "Peer %s - Sending newest block", p.key)
-	b, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
-	utils.HandleError(err)
+	b, definedErr := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
+	utils.HandleError(definedErr, nil)
 	m := makeMessage(MessageNewestBlock, b)
 	p.inbox <- m
 }
@@ -72,9 +72,9 @@ func handlerMsg(m *Message, p *peer) {
 	case MessageNewestBlock:
 		logf(log.InfoLevel, "Peer %s - Received the newest block", p.key)
 		var payload blockchain.Block
-		utils.HandleError(json.Unmarshal(m.Payload, &payload))
-		block, err := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
-		utils.HandleError(err)
+		utils.HandleError(json.Unmarshal(m.Payload, &payload), nil)
+		block, definedErr := blockchain.FindBlock(blockchain.BlockChain().NewestHash)
+		utils.HandleError(definedErr, nil)
 
 		if payload.Hash == block.Hash && payload.Height == block.Height {
 			return
@@ -94,26 +94,26 @@ func handlerMsg(m *Message, p *peer) {
 	case MessageAllBlocksResponse:
 		logf(log.InfoLevel, "Peer %s - Received all the blocks", p.key)
 		var payload []*blockchain.Block
-		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		utils.HandleError(json.Unmarshal(m.Payload, &payload), nil)
 		blockchain.BlockChain().Replace(payload)
 
 	case MessageNewBlockNotify:
 		logf(log.InfoLevel, "Peer %s - NewBlockNotify!", p.key)
 		var payload *blockchain.Block
-		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		utils.HandleError(json.Unmarshal(m.Payload, &payload), nil)
 		blockchain.BlockChain().AddPeerBlock(payload)
 
 	case MessageNewTxNotify:
 		logf(log.InfoLevel, "Peer %s - NewTxNotify!", p.key)
 		var payload *blockchain.Tx
-		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		utils.HandleError(json.Unmarshal(m.Payload, &payload), nil)
 		blockchain.Mempool().AddPeerTx(payload)
 
 	case MessageNewPeerNotify:
 		var payload string
 		// {연결해오는peerAddr : 연결해오는peerPort : 연결해오는peerWallet}
 		// :{연결되있는peerAddr: 연결되있는peerPort : 연결되있는peerWallet}
-		utils.HandleError(json.Unmarshal(m.Payload, &payload))
+		utils.HandleError(json.Unmarshal(m.Payload, &payload), nil)
 		parts := strings.Split(payload, ":")
 		logf(log.InfoLevel, "Peer %s - NewPeerNotify!", parts[:3])
 		server, _ := strconv.ParseBool(parts[5])
