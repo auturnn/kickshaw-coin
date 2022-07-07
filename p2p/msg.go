@@ -98,11 +98,13 @@ func handlerMsg(m *Message, p *peer) {
 		blockchain.BlockChain().Replace(payload)
 
 	case MessageNewBlockNotify:
+		logf(log.InfoLevel, "Peer %s - NewBlockNotify!", p.key)
 		var payload *blockchain.Block
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		blockchain.BlockChain().AddPeerBlock(payload)
 
 	case MessageNewTxNotify:
+		logf(log.InfoLevel, "Peer %s - NewTxNotify!", p.key)
 		var payload *blockchain.Tx
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
 		blockchain.Mempool().AddPeerTx(payload)
@@ -112,9 +114,9 @@ func handlerMsg(m *Message, p *peer) {
 		// {연결해오는peerAddr : 연결해오는peerPort : 연결해오는peerWallet}
 		// :{연결되있는peerAddr: 연결되있는peerPort : 연결되있는peerWallet}
 		utils.HandleError(json.Unmarshal(m.Payload, &payload))
-		logf(log.InfoLevel, "%s", payload)
 		parts := strings.Split(payload, ":")
+		logf(log.InfoLevel, "Peer %s - NewPeerNotify!", parts[:3])
 		server, _ := strconv.ParseBool(parts[5])
-		AddPeer(parts[0], parts[1], parts[2], parts[3], parts[4], server)
+		AddPeer(parts[0:3], parts[3:5], server)
 	}
 }

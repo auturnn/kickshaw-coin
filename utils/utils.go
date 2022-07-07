@@ -20,6 +20,7 @@ var logPn = log.Logf
 func HandleError(err error) {
 	if err != nil {
 		logPn(log.ErrorLevel, "%s", err)
+		log.Fatal()
 	}
 }
 

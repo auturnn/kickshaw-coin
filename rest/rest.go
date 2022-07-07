@@ -173,7 +173,9 @@ func getPeers(rw http.ResponseWriter, r *http.Request) {
 }
 
 func p2pServerConnect() {
-	res, err := http.Get("http://3.34.98.184:8080/wallet")
+	serverInfo := map[string]string{"ver": "http", "address": "127.0.0.1", "port": "8080"}
+	serverURL := fmt.Sprintf("%s://%s:%s", serverInfo["ver"], serverInfo["address"], serverInfo["port"])
+	res, err := http.Get(serverURL + "/wallet")
 	if err != nil {
 		utils.HandleError(errors.New("server is down"))
 	}
@@ -183,8 +185,10 @@ func p2pServerConnect() {
 	}
 	json.NewDecoder(res.Body).Decode(&walletPayload)
 
+	newPeer := []string{serverInfo["address"], serverInfo["port"], walletPayload.Address[:5]}
+	myInfo := []string{port[1:], wallet.WalletLayer{}.GetAddress()[:5]}
+	p2p.AddPeer(newPeer, myInfo, true)
 	log.Logf(log.InfoLevel, "p2p network Connecting...")
-	p2p.AddPeer("3.34.98.184", "8080", walletPayload.Address[:5], port[1:], wallet.WalletLayer{}.GetAddress()[:5], true)
 }
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
@@ -214,5 +218,6 @@ func Start(p int, status bool) {
 
 	cors := handlers.CORS()(router)
 	log.Logf(golog.InfoLevel, "Listening http://localhost%s", port)
-	log.Fatal(http.ListenAndServe(port, cors))
+	recover := handlers.RecoveryHandler()(cors)
+	log.Fatal(http.ListenAndServe(port, recover))
 }
