@@ -16,11 +16,17 @@ func Start() {
 	// utils.HandleError(err)
 
 	//하나의 컴퓨터에서 여러 테스트를 위해 적용됨
-	port := flag.Int("port", 7120, "Set port of the someone server")
-	status := flag.Bool("network", true, `Set application status in [network, solo]`)
+	var port int
+	var status string
+	flag.IntVar(&port, "port", 7120, "Set port of the someone server")
+	flag.StringVar(&status, "network", "server", `Set application status in [local, server]`)
+
+	//cmd shortcut
+	flag.IntVar(&port, "p", 7120, "Set port of the someone server")
+	flag.StringVar(&status, "n", "server", `Set application status in [local, server]`)
 	flag.Parse()
 
-	blockchain.Mempool()       //mempool Init
-	db.InitDB()                //db init
-	rest.Start(*port, *status) //rest start
+	blockchain.Mempool()     //mempool Init
+	db.InitDB()              //db init
+	rest.Start(port, status) //rest start
 }

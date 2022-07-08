@@ -171,9 +171,13 @@ func getPeers(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(p2p.AllPeers(&p2p.Peers))
 }
 
-func p2pServerConnect() {
-	serverInfo := map[string]string{"ver": "http", "address": "127.0.0.1", "port": "8080"}
-	serverURL := fmt.Sprintf("%s://%s:%s", serverInfo["ver"], serverInfo["address"], serverInfo["port"])
+func P2PRouter(router *mux.Router) {
+	router.HandleFunc("/peers", getPeers).Methods("GET")
+	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
+}
+
+func p2pServerConnect(ver, addr, port string) {
+	serverURL := fmt.Sprintf("%s://%s:%s", ver, addr, port)
 	res, err := http.Get(serverURL + "/wallet")
 	utils.HandleError(err, utils.ErrNetworkIsNotWork)
 
@@ -182,7 +186,7 @@ func p2pServerConnect() {
 	}
 	json.NewDecoder(res.Body).Decode(&walletPayload)
 
-	newPeer := []string{serverInfo["address"], serverInfo["port"], walletPayload.Address[:5]}
+	newPeer := []string{addr, port, walletPayload.Address[:5]}
 	myInfo := []string{port[1:], wallet.WalletLayer{}.GetAddress()[:5]}
 	p2p.AddPeer(newPeer, myInfo, true)
 	log.Logf(log.InfoLevel, "p2p network Connecting...")
@@ -190,7 +194,7 @@ func p2pServerConnect() {
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
 //그렇기때문에 로그인기능같은 본인인증이 필요함
-func Start(p int, status bool) {
+func Start(p int, status string) {
 	port = fmt.Sprintf(":%s", strconv.Itoa(p))
 
 	router := mux.NewRouter()
@@ -205,12 +209,13 @@ func Start(p int, status bool) {
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 
-	//network 연결 모드일때만 활성화 // 사용법 = cli/cli.go
-	if status {
-		router.HandleFunc("/peers", getPeers).Methods("GET")
-		router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
-		// p2pServerConnect()
-		go p2pServerConnect()
+	switch status {
+	case "server":
+		go P2PRouter(router)
+		p2pServerConnect("http", "3.34.98.184", "8080")
+	case "local":
+		go P2PRouter(router)
+		p2pServerConnect("http", "127.0.0.1", "8080")
 	}
 
 	cors := handlers.CORS()(router)
