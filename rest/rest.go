@@ -176,17 +176,17 @@ func P2PRouter(router *mux.Router) {
 	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 }
 
-func p2pServerConnect(ver, addr, port string) {
-	serverURL := fmt.Sprintf("%s://%s:%s", ver, addr, port)
+func p2pServerConnect(ver, addr, sPort string) {
+	fmt.Println(ver, addr, sPort)
+	serverURL := fmt.Sprintf("%s://%s:%s", ver, addr, sPort)
 	res, err := http.Get(serverURL + "/wallet")
 	utils.HandleError(err, utils.ErrNetworkIsNotWork)
-
 	var walletPayload struct {
 		Address string `json:"address"`
 	}
 	json.NewDecoder(res.Body).Decode(&walletPayload)
 
-	newPeer := []string{addr, port, walletPayload.Address[:5]}
+	newPeer := []string{addr, sPort, walletPayload.Address[:5]}
 	myInfo := []string{port[1:], wallet.WalletLayer{}.GetAddress()[:5]}
 	p2p.AddPeer(newPeer, myInfo, true)
 	log.Logf(log.InfoLevel, "p2p network Connecting...")
@@ -213,13 +213,17 @@ func Start(p int, networkMode string) {
 	case "server":
 		P2PRouter(router)
 		p2pServerConnect("http", "3.34.98.184", "8080")
+		break
 	case "local":
 		P2PRouter(router)
 		p2pServerConnect("http", "127.0.0.1", "8080")
+		break
 	case "alone":
 		log.Info("alone mode start")
+		break
 	default:
 		utils.HandleError(utils.ErrCMDNetwork, nil)
+		break
 	}
 
 	cors := handlers.CORS()(router)
