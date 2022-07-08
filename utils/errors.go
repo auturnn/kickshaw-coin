@@ -21,3 +21,4 @@ var ErrTargetBlockNotFound = errors.New("target block is not found")
 var ErrPeerNotConnect = errors.New("failed connect to peer")
 
 var ErrLogPath = errors.New("failed create to log path ")
+var ErrCMDNetwork = errors.New("bad request! network status command")

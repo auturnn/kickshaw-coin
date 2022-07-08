@@ -194,7 +194,7 @@ func p2pServerConnect(ver, addr, port string) {
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
 //그렇기때문에 로그인기능같은 본인인증이 필요함
-func Start(p int, status string) {
+func Start(p int, networkMode string) {
 	port = fmt.Sprintf(":%s", strconv.Itoa(p))
 
 	router := mux.NewRouter()
@@ -209,13 +209,17 @@ func Start(p int, status string) {
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 
-	switch status {
+	switch networkMode {
 	case "server":
-		go P2PRouter(router)
+		P2PRouter(router)
 		p2pServerConnect("http", "3.34.98.184", "8080")
 	case "local":
-		go P2PRouter(router)
+		P2PRouter(router)
 		p2pServerConnect("http", "127.0.0.1", "8080")
+	case "alone":
+		log.Info("alone mode start")
+	default:
+		utils.HandleError(utils.ErrCMDNetwork, nil)
 	}
 
 	cors := handlers.CORS()(router)
