@@ -212,7 +212,7 @@ func Start(p int, networkMode string) {
 	switch networkMode {
 	case "server":
 		P2PRouter(router)
-		p2pServerConnect("http", "3.34.98.184", "8080")
+		p2pServerConnect("http", "api.kickshaw-coin.com", "80")
 		break
 	case "local":
 		P2PRouter(router)

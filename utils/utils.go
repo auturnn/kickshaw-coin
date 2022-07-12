@@ -10,13 +10,11 @@ import (
 	"fmt"
 	"strings"
 
-	"log"
-
 	"github.com/kataras/golog"
 )
 
 //unit test시에도 내용을 변경하여 정상운용 가능하도록 설정
-var logPn = log.Panic
+// var logPn = log.Panic
 
 //HandleError error 변수를 받아 nil이 아닐경우 앱내에서 정의된 에러인지 확인후 상황에 따른 처리를 담당
 func HandleError(err, definedErr error) {

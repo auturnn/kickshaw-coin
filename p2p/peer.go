@@ -87,6 +87,22 @@ func (p *peer) write() {
 	}
 }
 
+// func (p *peer) ping() {
+// 	lastResponse := time.Now()
+// 	p.conn.SetPingHandler(func(appData string) error {
+// 		lastResponse = time.Now()
+// 		return nil
+// 	})
+
+// 	for {
+// 		err := p.conn.WriteMessage(websocket.PingMessage, []byte("ping"))
+// 		if err != nil {
+// 			return
+// 		}
+// 		time.Sleep()
+// 	}
+// }
+
 func initPeer(conn *websocket.Conn, addr, port, wAddr string, server bool) *peer {
 	Peers.m.Lock()
 	defer Peers.m.Unlock()
