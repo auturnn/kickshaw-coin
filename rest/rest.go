@@ -176,20 +176,13 @@ func P2PRouter(router *mux.Router) {
 	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 }
 
-func p2pServerConnect(ver, addr, sPort string) {
-	fmt.Println(ver, addr, sPort)
-	serverURL := fmt.Sprintf("%s://%s:%s", ver, addr, sPort)
-	res, err := http.Get(serverURL + "/wallet")
-	utils.HandleError(err, utils.ErrNetworkIsNotWork)
-	var walletPayload struct {
-		Address string `json:"address"`
+func connectServer(rw http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		json.NewEncoder(rw).Encode(p2p.GetServerList())
+	case "POST":
+		p2p.ServerConnect("http", "api.kickshaw-coin.com", "80", port[1:])
 	}
-	json.NewDecoder(res.Body).Decode(&walletPayload)
-
-	newPeer := []string{addr, sPort, walletPayload.Address[:5]}
-	myInfo := []string{port[1:], wallet.WalletLayer{}.GetAddress()[:5]}
-	p2p.AddPeer(newPeer, myInfo, true)
-	log.Logf(log.InfoLevel, "p2p network Connecting...")
 }
 
 //wallet파일만있으면 자신이 해당 파일을 가지고 그사람인척도 가능.
@@ -208,22 +201,18 @@ func Start(p int, networkMode string) {
 	router.HandleFunc("/mempool", getMempool).Methods("GET")
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
-
+	router.HandleFunc("/server", connectServer).Methods("POST", "GET")
 	switch networkMode {
 	case "server":
 		P2PRouter(router)
-		p2pServerConnect("http", "3.34.98.184", "8080")
-		break
+		p2p.ServerConnect("http", "api.kickshaw-coin.com", "80", port[1:])
 	case "local":
 		P2PRouter(router)
-		p2pServerConnect("http", "127.0.0.1", "8080")
-		break
+		p2p.ServerConnect("http", "127.0.0.1", "8080", port[1:])
 	case "alone":
 		log.Info("alone mode start")
-		break
 	default:
 		utils.HandleError(utils.ErrCMDNetwork, nil)
-		break
 	}
 
 	cors := handlers.CORS()(router)

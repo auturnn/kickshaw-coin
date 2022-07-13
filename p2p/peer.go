@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/auturnn/kickshaw-coin/utils"
 	"github.com/gorilla/websocket"
+	"github.com/kataras/golog"
 )
 
 type peers struct {
@@ -59,7 +59,8 @@ func ServerCheck() {
 	}
 
 	if cnt == 0 {
-		utils.HandleError(utils.ErrNetworkIsNotWork, nil)
+		Peers.v = make(map[string]*peer)
+		logf(golog.InfoLevel, "서버연결이 종료되어 Local모드로 전환합니다")
 	}
 }
 
