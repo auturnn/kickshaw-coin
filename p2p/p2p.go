@@ -1,12 +1,14 @@
 package p2p
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/auturnn/kickshaw-coin/blockchain"
 	"github.com/auturnn/kickshaw-coin/utils"
+	"github.com/auturnn/kickshaw-coin/wallet"
 	"github.com/gorilla/websocket"
 	log "github.com/kataras/golog"
 )
@@ -59,4 +61,32 @@ func BroadcastNewTx(tx *blockchain.Tx) {
 	for _, p := range Peers.v {
 		notifyNewTx(tx, p)
 	}
+}
+
+const serverAddress string = "http://api.kickshaw-coin.com"
+
+func ServerConnect(ver, addr, serverPort, myPort string) {
+	fmt.Println(ver, addr, serverPort)
+	serverURL := fmt.Sprintf("%s://%s:%s", ver, addr, serverPort)
+	res, err := http.Get(serverURL + "/wallet")
+	utils.HandleError(err, utils.ErrNetworkIsNotWork)
+	var walletPayload struct {
+		Address string `json:"address"`
+	}
+	json.NewDecoder(res.Body).Decode(&walletPayload)
+
+	newPeer := []string{addr, serverPort, walletPayload.Address[:5]}
+	myInfo := []string{myPort, wallet.WalletLayer{}.GetAddress()[:5]}
+	AddPeer(newPeer, myInfo, true)
+	log.Logf(log.InfoLevel, "p2p network Connecting...")
+}
+
+func GetServerList() []string {
+	var serverList []string
+	for _, p := range Peers.v {
+		if p.server {
+			serverList = append(serverList, p.key)
+		}
+	}
+	return serverList
 }
